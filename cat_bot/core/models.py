@@ -68,8 +68,6 @@ class LevelTitle(Base):
 
     season_ranks: Mapped[List["SeasonRank"]] = relationship(
         back_populates="level_title")
-    user_ranks: Mapped[List["UserRank"]] = relationship(
-        back_populates="level_title")
 
 
 class Season(Base):
@@ -112,23 +110,6 @@ class SeasonRank(Base):
     season: Mapped["Season"] = relationship(back_populates="ranks")
     level_title: Mapped[Optional["LevelTitle"]] = relationship(
         back_populates="season_ranks")
-
-
-class UserRank(Base):
-    __tablename__ = "user_ranks"
-
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(Integer, unique=True)
-    experience: Mapped[int] = mapped_column(Integer, default=0)
-    level: Mapped[int] = mapped_column(Integer, default=1)
-    total_time: Mapped[datetime.timedelta] = mapped_column(
-        Interval, default=datetime.timedelta())
-    visits_count: Mapped[int] = mapped_column(Integer, default=0)
-    level_title_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("level_titles.id", ondelete="SET NULL"))
-
-    level_title: Mapped[Optional["LevelTitle"]] = relationship(
-        back_populates="user_ranks")
 
 
 class Achievement(Base):
