@@ -1,7 +1,7 @@
-import random
 import logging
-from aiogram import Bot
+import random
 
+from aiogram import Bot
 from core.bot_constants import BotRemidersCfg
 
 logger = logging.getLogger(__name__)
