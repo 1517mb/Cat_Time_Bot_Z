@@ -5,7 +5,9 @@ from aiogram.filters import Command, CommandObject, StateFilter
 from aiogram.fsm.state import any_state
 from aiogram.types import Message
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from core.database import async_session_maker
 from services.tasks import (send_crypto_briefing, send_currency_briefing,
+                            send_daily_statistics_task,
                             send_transport_reminder, send_weather_briefing)
 
 router = Router()
@@ -174,3 +176,49 @@ async def cmd_start_crypto(
         f"✅ Рассылка криптовалют установлена на *{time_str}*!",
         parse_mode="Markdown"
     )
+
+
+@router.message(Command("start_stats"))
+async def cmd_start_stats(
+    message: Message,
+    command: CommandObject,
+    scheduler: AsyncIOScheduler
+):
+    if not command.args:
+        return await message.answer(
+            "❌ Укажите время. Пример: <code>/start_stats 18:00</code>",
+            parse_mode="HTML")
+
+    time_match = re.match(r"^([01]\d|2[0-3]):([0-5]\d)$", command.args.strip())
+    if not time_match:
+        return await message.answer("❌ Формат времени: ЧЧ:ММ")
+
+    hour, minute = time_match.groups()
+    chat_id = message.chat.id
+    job_id = f"daily_stats_{chat_id}"
+
+    scheduler.add_job(
+        send_daily_statistics_task,
+        trigger="cron",
+        hour=hour,
+        minute=minute,
+        id=job_id,
+        args=[message.bot, chat_id, async_session_maker],
+        replace_existing=True
+    )
+
+    await message.answer(
+        f"📊 <b>Сводка активирована!</b>\n"
+        f"Отчет по выездам ежедневно в <code>{hour}:{minute}</code>.",
+        parse_mode="HTML"
+    )
+
+
+@router.message(Command("stop_stats"))
+async def cmd_stop_stats(message: Message, scheduler: AsyncIOScheduler):
+    job_id = f"daily_stats_{message.chat.id}"
+    if scheduler.get_job(job_id):
+        scheduler.remove_job(job_id)
+        await message.answer("📊 Рассылка статистики отключена.")
+    else:
+        await message.answer("❓ Статистика не была настроена.")
