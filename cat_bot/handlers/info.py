@@ -39,7 +39,7 @@ async def cmd_profile(message: Message, session: AsyncSession):
     total_hours = int(rank.total_time.total_seconds() // 3600)
     total_minutes = int((rank.total_time.total_seconds() % 3600) // 60)
     time_str = f"{total_hours}ч {total_minutes}м"
-    days_left = (season.end_date - datetime.datetime.now().date()).days if season.end_date else 0  # noqa: E501
+    days_left = (season.end_date - datetime.datetime.now()).days if season.end_date else 0  # noqa: E501
     next_level_exp = rank.level_title.min_experience if rank.level_title else 100  # noqa: E501
     progress = min(100, max(0, (rank.experience / next_level_exp) * 100)) if next_level_exp else 100  # noqa: E501
     progress_bar = create_progress_bar(progress)
