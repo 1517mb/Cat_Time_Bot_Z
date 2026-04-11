@@ -1,9 +1,8 @@
 import datetime
 from typing import List, Optional
 
-from sqlalchemy import (Boolean, DateTime, ForeignKey, Index,
-                        Integer, Interval, Numeric, String, Text,
-                        UniqueConstraint)
+from sqlalchemy import (Boolean, DateTime, ForeignKey, Index, Integer,
+                        Interval, Numeric, String, Text, UniqueConstraint)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -28,7 +27,7 @@ class UserActivity(Base):
     __tablename__ = "user_activities"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(Integer)  # Telegram ID
+    user_id: Mapped[int] = mapped_column(Integer)
     username: Mapped[Optional[str]] = mapped_column(String(255))
     company_id: Mapped[int] = mapped_column(
         ForeignKey("companies.id", ondelete="CASCADE"))
@@ -45,7 +44,9 @@ class UserActivity(Base):
     @property
     def get_spent_time(self) -> str:
         if self.leave_time:
-            delta = self.leave_time - self.join_time
+            leave = self.leave_time.replace(tzinfo=None)
+            join = self.join_time.replace(tzinfo=None)
+            delta = leave - join
             total_seconds = delta.total_seconds()
             hours = int(total_seconds // 3600)
             minutes = int((total_seconds % 3600) // 60)
