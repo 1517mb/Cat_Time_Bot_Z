@@ -194,9 +194,9 @@ async def process_new_company(
 
 
 @router.message(Command("leave"), StateFilter(any_state))
-async def cmd_leave(message: Message,
-                    session: AsyncSession,
-                    state: FSMContext):
+async def cmd_leave(
+    message: Message, session: AsyncSession, state: FSMContext
+):
     await state.clear()
     user_id = message.from_user.id
     username = message.from_user.username or f"User_{user_id}"
@@ -211,7 +211,8 @@ async def cmd_leave(message: Message,
     leave_naive = active.leave_time.replace(tzinfo=None)
 
     exp_earned = gamification.calculate_experience(
-        join_naive, leave_naive, daily_visits)
+        join_naive, leave_naive, daily_visits
+    )
     active.experience_gained = exp_earned
 
     new_achievements = await gamification.check_achievements(
@@ -227,37 +228,46 @@ async def cmd_leave(message: Message,
     )
     await session.commit()
     await session.refresh(active, ["company"])
-
+    if rank:
+        await session.refresh(rank, ["level_title"])
     spent_time = active.get_spent_time
     local_time = datetime.datetime.now().strftime("%H:%M")
 
     current_exp = rank.experience if rank else 0
     current_level = rank.level if rank else 1
+    current_level_min = (
+        rank.level_title.min_experience if rank and rank.level_title else 0
+    )
     next_exp = await crud.get_next_level_exp(session, current_level)
-
-    p_bar = generate_progress_bar(current_exp, next_exp)
-
+    exp_in_level = current_exp - current_level_min
+    exp_needed = next_exp - current_level_min if next_exp > 0 else 0
+    if exp_needed > 0:
+        p_bar = generate_progress_bar(exp_in_level, exp_needed)
+    else:
+        p_bar = generate_progress_bar(1, 1)
     msg_text = (
         f"🐾👋 *Вы покинули `{active.company.name}`*\n"
         f"⌛️ Время ухода: {local_time}.\n"
-        f"⏳ Затраченное время: {active.get_spent_time}.\n"
+        f"⏳ Затраченное время: {spent_time}.\n"
         f"🔰 Получено опыта: +{exp_earned}\n"
         f"📊 Прогресс: {current_exp}/{next_exp}\n"
         f"`[{p_bar}]`"
     )
 
     if new_achievements:
-        ach_str = "\n".join([f"• {ach}" for ach in new_achievements])
+        ach_lines = [f"• {ach}" for ach in new_achievements]
+        ach_str = "\n".join(ach_lines)
         msg_text += f"\n\n🏆 *Достижения:*\n{ach_str}"
 
     if level_up and rank:
-        await session.refresh(rank, ["level_title"])
         title = rank.level_title.title if rank.level_title else "Неизвестно"
         msg_text += f"\n\n🎉 *Новый уровень: {new_lvl} lvl - {title}* 🎉"
 
-    await message.answer(msg_text,
-                         reply_markup=ReplyKeyboardRemove(),
-                         parse_mode="Markdown")
+    await message.answer(
+        msg_text,
+        reply_markup=ReplyKeyboardRemove(),
+        parse_mode="Markdown",
+    )
 
 
 @router.message(Command("edit_start"), StateFilter(any_state))
@@ -302,8 +312,10 @@ async def cmd_edit_start(
 
 @router.message(Command("edit_end"), StateFilter(any_state))
 async def cmd_edit_end(
-    message: Message, command: CommandObject, 
-    session: AsyncSession, state: FSMContext
+    message: Message,
+    command: CommandObject,
+    session: AsyncSession,
+    state: FSMContext,
 ):
     await state.clear()
     user_id = message.from_user.id
@@ -312,9 +324,12 @@ async def cmd_edit_end(
     active = await crud.get_active_activity(session, user_id)
     if not active:
         return await message.answer("❌ Нет активного выезда.")
+
     if not command.args:
-        return await message.answer("❌ Укажите время: `/edit_end ЧЧ:ММ`",
-                                    parse_mode="Markdown")
+        return await message.answer(
+            "❌ Укажите время: `/edit_end ЧЧ:ММ`",
+            parse_mode="Markdown",
+        )
 
     parsed = parse_time(command.args.strip())
     if not parsed:
@@ -322,58 +337,82 @@ async def cmd_edit_end(
 
     local_now = datetime.datetime.now().astimezone()
     local_new_leave = local_now.replace(
-        hour=parsed.hour, minute=parsed.minute, second=0, microsecond=0)
-    utc_new_leave = local_new_leave.astimezone(
-        datetime.timezone.utc).replace(tzinfo=None)
+        hour=parsed.hour, minute=parsed.minute, second=0, microsecond=0
+    )
+    utc_new_leave = local_new_leave.astimezone(datetime.timezone.utc).replace(
+        tzinfo=None
+    )
     join_utc = active.join_time.replace(tzinfo=None)
 
     if utc_new_leave < join_utc:
         return await message.answer(
-            "❌ Время ухода не может быть раньше прибытия!")
-    if utc_new_leave > datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None):
+            "❌ Время ухода не может быть раньше прибытия!"
+        )
+
+    utc_now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+    if utc_new_leave > utc_now:
         return await message.answer("❌ Нельзя уйти в будущем!")
 
     active.leave_time = utc_new_leave
     active.edited = True
     active.edit_count += 1
     daily_visits = await crud.get_today_trips_count(session, user_id)
-
     exp_earned = gamification.calculate_experience(
-        join_utc, utc_new_leave, daily_visits)
+        join_utc, utc_new_leave, daily_visits
+    )
     active.experience_gained = exp_earned
     new_achievements = await gamification.check_achievements(
-        session, user_id, username, active)
+        session, user_id, username, active
+    )
 
     time_spent_td = utc_new_leave - join_utc
     rank, level_up, new_lvl = await crud.update_user_rank(
-        session=session, user_id=user_id,
-        username=username, exp_added=exp_earned, time_added=time_spent_td
+        session=session,
+        user_id=user_id,
+        username=username,
+        exp_added=exp_earned,
+        time_added=time_spent_td,
     )
     await session.commit()
     await session.refresh(active, ["company"])
+    if rank:
+        await session.refresh(rank, ["level_title"])
+    spent_time = active.get_spent_time
+    leave_time_str = parsed.strftime("%H:%M")
 
     current_exp = rank.experience if rank else 0
     current_level = rank.level if rank else 1
+    current_level_min = (
+        rank.level_title.min_experience if rank and rank.level_title else 0
+    )
     next_exp = await crud.get_next_level_exp(session, current_level)
-
-    p_bar = generate_progress_bar(current_exp, next_exp)
+    exp_in_level = current_exp - current_level_min
+    exp_needed = next_exp - current_level_min if next_exp > 0 else 0
+    if exp_needed > 0:
+        p_bar = generate_progress_bar(exp_in_level, exp_needed)
+    else:
+        p_bar = generate_progress_bar(1, 1)
 
     msg_text = (
         f"🐾👋 *Вы покинули `{active.company.name}`* 📝 _(ручной ввод)_\n"
-        f"⌛️ Время ухода: {parsed.strftime('%H:%M')}.\n"
-        f"⏳ Затраченное время: {active.get_spent_time}.\n"
+        f"⌛️ Время ухода: {leave_time_str}.\n"
+        f"⏳ Затраченное время: {spent_time}.\n"
         f"🔰 Получено опыта: +{exp_earned}\n"
         f"📊 Прогресс: {current_exp}/{next_exp}\n"
         f"`[{p_bar}]`"
     )
+
     if new_achievements:
-        ach_str = "\n".join([f"• {a}" for a in new_achievements])
+        ach_lines = [f"• {a}" for a in new_achievements]
+        ach_str = "\n".join(ach_lines)
         msg_text += f"\n\n🏆 *Достижения:*\n{ach_str}"
+
     if level_up and rank:
-        await session.refresh(rank, ["level_title"])
         title = rank.level_title.title if rank.level_title else "Неизвестно"
         msg_text += f"\n\n🎉 *Новый уровень: {new_lvl} lvl - {title}* 🎉"
 
-    await message.answer(msg_text,
-                         reply_markup=ReplyKeyboardRemove(),
-                         parse_mode="Markdown")
+    await message.answer(
+        msg_text,
+        reply_markup=ReplyKeyboardRemove(),
+        parse_mode="Markdown",
+    )
