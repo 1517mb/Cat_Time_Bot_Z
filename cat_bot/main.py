@@ -15,6 +15,7 @@ from services.seasons import (check_and_update_seasons_task,
                               create_season_if_needed)
 
 load_dotenv()
+CHAT_ID = os.getenv("CHAT_ID")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -56,7 +57,7 @@ async def main():
         hour=0,
         minute=1,
         id="check_seasons_daily",
-        args=[async_session_maker],
+        args=[async_session_maker, bot, CHAT_ID],
         replace_existing=True
     )
     scheduler.start()
