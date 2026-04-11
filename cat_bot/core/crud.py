@@ -2,7 +2,8 @@ import datetime
 from typing import Optional, Sequence
 
 from core import models
-from core.models import Achievement, Season, UserActivity
+from core.models import (Achievement, DailyStatistics, Season, SeasonRank,
+                         UserActivity)
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -157,12 +158,17 @@ async def get_user_achievements(session: AsyncSession, user_id: int):
 
 
 async def get_user_rank_info(session: AsyncSession, user_id: int):
-    """Получает информацию о ранге пользователя вместе с названием уровня."""
-    stmt = select(models.SeasonRank).options(
-        selectinload(models.SeasonRank.level_title)
-    ).where(models.SeasonRank.user_id == user_id)
-    result = await session.execute(stmt)
-    return result.scalar_one_or_none()
+    """Получает ранг пользователя в текущем активном сезоне."""
+    stmt = (
+        select(SeasonRank)
+        .join(Season, SeasonRank.season_id == Season.id)
+        .options(selectinload(SeasonRank.level_title))
+        .where(
+            SeasonRank.user_id == user_id, 
+            Season.is_active == True
+        )
+    )
+    return await session.scalar(stmt)
 
 
 async def get_next_level_exp(session: AsyncSession, current_level: int) -> int:
@@ -213,3 +219,39 @@ async def get_full_daily_stats(session: AsyncSession):
         "achievements": ach_list,
         "today": today
     }
+
+
+async def save_daily_statistics(session: AsyncSession, user_stats: list, today: datetime.date):
+    """
+    Проходится по собранной статистике юзеров и записывает/обновляет её в DailyStatistics.
+    """
+    for row in user_stats:
+        # Конвертируем дни в секунды (SQLite специфика)
+        total_seconds = row.total_days * 86400
+        total_time_delta = datetime.timedelta(seconds=total_seconds)
+        
+        # Проверяем, есть ли уже запись за сегодня для этого юзера
+        stmt = select(DailyStatistics).where(
+            and_(
+                DailyStatistics.user_id == row.user_id,
+                func.date(DailyStatistics.date) == today
+            )
+        )
+        existing_stat = await session.scalar(stmt)
+        
+        if existing_stat:
+            # Если бот упал и запустился снова, просто обновляем данные
+            existing_stat.total_trips = row.trips
+            existing_stat.total_time = total_time_delta
+        else:
+            # Если бот упал и запустился снова, просто обновляем данные
+            new_stat = DailyStatistics(
+                user_id=row.user_id,
+                username=row.username,
+                date=today,
+                total_time=total_time_delta,
+                total_trips=row.trips
+            )
+            session.add(new_stat)
+            
+    await session.commit()
