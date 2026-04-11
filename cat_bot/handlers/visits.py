@@ -10,6 +10,7 @@ from aiogram.types import (KeyboardButton, Message, ReplyKeyboardMarkup,
                            ReplyKeyboardRemove)
 from core import crud, models
 from services import gamification
+from services.gamification import generate_progress_bar
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = Router()
@@ -230,11 +231,19 @@ async def cmd_leave(message: Message,
     spent_time = active.get_spent_time
     local_time = datetime.datetime.now().strftime("%H:%M")
 
+    current_exp = rank.experience if rank else 0
+    current_level = rank.level if rank else 1
+    next_exp = await crud.get_next_level_exp(session, current_level)
+
+    p_bar = generate_progress_bar(current_exp, next_exp)
+
     msg_text = (
         f"🐾👋 *Вы покинули `{active.company.name}`*\n"
         f"⌛️ Время ухода: {local_time}.\n"
-        f"⏳ Затраченное время: {spent_time}.\n"
-        f"🔰 Получено опыта: {exp_earned}"
+        f"⏳ Затраченное время: {active.get_spent_time}.\n"
+        f"🔰 Получено опыта: +{exp_earned}\n"
+        f"📊 Прогресс: {current_exp}/{next_exp}\n"
+        f"`[{p_bar}]`"
     )
 
     if new_achievements:
@@ -343,11 +352,19 @@ async def cmd_edit_end(
     await session.commit()
     await session.refresh(active, ["company"])
 
+    current_exp = rank.experience if rank else 0
+    current_level = rank.level if rank else 1
+    next_exp = await crud.get_next_level_exp(session, current_level)
+
+    p_bar = generate_progress_bar(current_exp, next_exp)
+
     msg_text = (
-        f"🐾👋 *Вы покинули `{active.company.name}`* _(ручной ввод)_\n"
+        f"🐾👋 *Вы покинули `{active.company.name}`* 📝 _(ручной ввод)_\n"
         f"⌛️ Время ухода: {parsed.strftime('%H:%M')}.\n"
         f"⏳ Затраченное время: {active.get_spent_time}.\n"
-        f"🔰 Опыт: {exp_earned}"
+        f"🔰 Получено опыта: +{exp_earned}\n"
+        f"📊 Прогресс: {current_exp}/{next_exp}\n"
+        f"`[{p_bar}]`"
     )
     if new_achievements:
         ach_str = "\n".join([f"• {a}" for a in new_achievements])
