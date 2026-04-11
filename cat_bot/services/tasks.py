@@ -2,7 +2,10 @@ import logging
 import random
 
 from aiogram import Bot
+
 from core.bot_constants import BotRemidersCfg
+from services.currency import get_currency_rates
+from services.weather import get_weather
 
 logger = logging.getLogger(__name__)
 
@@ -25,3 +28,23 @@ async def send_transport_reminder(bot: Bot, chat_id: int):
         logger.info(f"Напоминание отправлено в чат {chat_id}")
     except Exception as e:
         logger.error(f"Ошибка при отправке напоминания: {e}")
+
+
+async def send_weather_briefing(bot: Bot, chat_id: int):
+    """Отправляет развернутую погодную сводку."""
+    try:
+        weather_text = await get_weather()
+        await bot.send_message(chat_id, weather_text, parse_mode="HTML")
+        logger.info(f"Погода отправлена в чат {chat_id}")
+    except Exception as e:
+        logger.error(f"Ошибка при отправке погоды: {e}")
+
+
+async def send_currency_briefing(bot: Bot, chat_id: int):
+    """Отправляет сводку курсов валют."""
+    try:
+        text = await get_currency_rates()
+        await bot.send_message(chat_id, text, parse_mode="HTML")
+        logger.info(f"Курсы валют отправлены в чат {chat_id}")
+    except Exception as e:
+        logger.error(f"Ошибка при отправке валют: {e}")

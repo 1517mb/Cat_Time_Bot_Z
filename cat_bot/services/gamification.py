@@ -1,9 +1,10 @@
 import datetime
 import random
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from core import models
 from core.bot_constants import BotAchievementsCfg
-from sqlalchemy.ext.asyncio import AsyncSession
 
 ACHIEVEMENT_BONUSES = {
     "Первая кровь": 1,

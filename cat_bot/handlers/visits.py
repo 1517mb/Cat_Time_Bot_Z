@@ -8,9 +8,10 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup, any_state
 from aiogram.types import (KeyboardButton, Message, ReplyKeyboardMarkup,
                            ReplyKeyboardRemove)
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from core import crud, models
 from services import gamification
-from sqlalchemy.ext.asyncio import AsyncSession
 
 router = Router()
 

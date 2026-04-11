@@ -1,9 +1,10 @@
 import datetime
 from typing import Optional, Sequence
 
-from core import models
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from core import models
 
 
 async def get_company_by_name(

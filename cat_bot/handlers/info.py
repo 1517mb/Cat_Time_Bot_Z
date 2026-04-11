@@ -3,9 +3,10 @@ import datetime
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
-from core import crud, models
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from core import crud, models
 
 router = Router()
 
