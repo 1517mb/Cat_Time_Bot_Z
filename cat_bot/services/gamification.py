@@ -14,6 +14,18 @@ ACHIEVEMENT_BONUSES = {
 }
 
 
+def generate_progress_bar(current_exp: int,
+                          next_level_exp: int,
+                          length: int = 10) -> str:
+    """Генерирует текстовый прогресс-бар."""
+    if next_level_exp <= 0:
+        return "🟩" * length
+    fill_pct = min(current_exp / next_level_exp, 1.0)
+    filled_blocks = int(length * fill_pct)
+    empty_blocks = length - filled_blocks
+    return "🟩" * filled_blocks + "⬜️" * empty_blocks
+
+
 def calculate_experience(join_time: datetime.datetime,
                          leave_time: datetime.datetime,
                          daily_visits: int) -> int:
