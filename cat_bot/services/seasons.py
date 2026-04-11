@@ -2,6 +2,7 @@ import datetime
 import logging
 import random
 
+from aiogram import Bot
 from core import models
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import select
@@ -69,15 +70,29 @@ async def generate_season_name(session: AsyncSession, theme: str) -> str:
     return season_name
 
 
-async def create_season_if_needed(session: AsyncSession):
-    """Создает новый сезон, если нет активных"""
-    active_season = await session.scalar(select(models.Season).where(models.Season.is_active == True))  # noqa
+async def create_season_if_needed(
+        session: AsyncSession) -> tuple[models.Season, bool]:
+    """
+    ЯДРО ЛОГИКИ: Работает с уже открытой сессией.
+    Возвращает кортеж: (объект_сезона, был_ли_создан_новый_сезон_только_что)
+    """
+    today = datetime.datetime.now().date()
+    active_season = await session.scalar(
+        select(models.Season).where(models.Season.is_active)
+    )
     if active_season:
-        return active_season
+        if active_season.end_date is not None:
+            if isinstance(active_season.end_date, datetime.datetime):
+                end_date = active_season.end_date.date()
+            else:
+                end_date = active_season.end_date
+            if today <= end_date:
+                return active_season, False
+        active_season.is_active = False
+        await session.commit()
+        logger.info(f"🏁 Сезон '{active_season.name}' завершен.")
     theme = determine_season_theme()
     season_name = await generate_season_name(session, theme)
-    today = datetime.datetime.now().date()
-
     new_season = models.Season(
         name=season_name,
         theme=theme,
@@ -87,5 +102,27 @@ async def create_season_if_needed(session: AsyncSession):
     )
     session.add(new_season)
     await session.commit()
-    logger.info(f"🚀 Создан новый сезон: {season_name}")
-    return new_season
+    logger.info(f"🚀 Создан новый сезон: {season_name} (тема: {theme})")
+    return new_season, True
+
+
+async def check_and_update_seasons_task(
+        session_maker, bot: Bot, chat_id: int):
+    """
+    Создает свою сессию, вызывает логику и шлет уведомление.
+    """
+    async with session_maker() as session:
+        season, is_new = await create_season_if_needed(session)
+        if is_new:
+            msg = (
+                f"🎉 <b>Внимание, смена сезона!</b> 🎉\n\n"
+                f"Старый сезон официально завершен. Начинается новый этап:\n"
+                f"🏆 <b>{season.name}</b>\n\n"
+                f"Пора зарабатывать новый опыт и достижения. "
+                "Всем удачного дня! 🚀"
+            )
+            try:
+                await bot.send_message(chat_id=chat_id,
+                                       text=msg, parse_mode="HTML")
+            except Exception as e:
+                logger.error(f"Не удалось отправить уведомление о сезоне: {e}")
