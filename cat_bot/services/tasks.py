@@ -6,7 +6,7 @@ from aiogram import Bot
 from aiogram.types import URLInputFile
 from core.bot_constants import BotRemidersCfg
 from core.crud import (get_full_daily_stats, get_next_level_exp,
-                       get_user_rank_info)
+                       get_user_rank_info, save_daily_statistics)
 from handlers.tools import CAT_CAPTION, _fetch_cat_image
 from services.crypto import get_crypto_rates
 from services.currency import get_currency_rates
@@ -129,11 +129,12 @@ async def send_daily_statistics_task(
     chat_id: int,
     session_maker: async_sessionmaker,
 ) -> None:
+    """Отправляет ежедневную статистику в указанный чат и сохраняет её в БД."""
     async with session_maker() as session:
         data = await get_full_daily_stats(session)
         if not data:
             return
-
+        await save_daily_statistics(session, data["user_stats"], data["today"])
         header = "📊 <b>Общая статистика за сегодня:</b>\n"
         season_info = _format_season_info(data["today"], data["season"])
         summary_block = _format_summary_block(
@@ -142,15 +143,14 @@ async def send_daily_statistics_task(
             session, data["user_stats"], data["achievements"]
         )
         metrics = _format_global_metrics(total_trips, total_seconds)
-
         final_msg = (
             f"{header}\n"
             f"{summary_block}\n"
             f"{metrics}\n\n"
-            f"🏅 <b>Участники:</b>\n\n" + "\n\n".join(user_blocks) +
+            f"🏅 <b>Участники:</b>\n\n" +
+            "\n\n".join(user_blocks) +
             "\n\n<i>КотБот одобряет вашу продуктивность! 🐾</i>"
         )
-
         await bot.send_message(chat_id, final_msg, parse_mode="HTML")
 
 
