@@ -1,65 +1,11 @@
-import datetime
-
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
-from core import crud, models
+from core import models
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = Router()
-
-
-def create_progress_bar(progress: float, length: int = 10) -> str:
-    filled = min(length, max(0, int(progress / 100 * length)))
-    return f"[{'■' * filled}{'□' * (length - filled)}]"
-
-
-@router.message(Command("profile"))
-async def cmd_profile(message: Message, session: AsyncSession):
-    user_id = message.from_user.id
-    season = await crud.get_current_season(session)
-    if not season:
-        return await message.answer(
-            "ℹ️ В данный момент сезон не активен. "
-            "Ожидайте начала нового сезона!")
-    stmt = select(models.SeasonRank).where(
-        models.SeasonRank.user_id == user_id,
-        models.SeasonRank.season_id == season.id
-    )
-    rank = await session.scalar(stmt)
-    if not rank:
-        return await message.answer(
-            "👤 *Ваш профиль*\n\n"
-            "Вы ещё не совершали выездов в текущем сезоне.\n"
-            "Используйте команду /join чтобы начать!",
-            parse_mode="Markdown"
-        )
-    await session.refresh(rank, ['level_title'])
-    total_hours = int(rank.total_time.total_seconds() // 3600)
-    total_minutes = int((rank.total_time.total_seconds() % 3600) // 60)
-    time_str = f"{total_hours}ч {total_minutes}м"
-    days_left = (season.end_date - datetime.datetime.now()).days if season.end_date else 0  # noqa: E501
-    next_level_exp = rank.level_title.min_experience if rank.level_title else 100  # noqa: E501
-    progress = min(100, max(0, (rank.experience / next_level_exp) * 100)) if next_level_exp else 100  # noqa: E501
-    progress_bar = create_progress_bar(progress)
-
-    title_name = rank.level_title.title if rank.level_title else "Без звания"
-    category = rank.level_title.category if rank.level_title else "legend"
-
-    msg_text = (
-        f"🏆 *Текущий сезон: {season.name}*\n"
-        f"⏳ До конца сезона: *{days_left} дней*\n\n"
-        "👤 *Ваш профиль*\n\n"
-        f"🎯 Уровень: *{rank.level}*\n"
-        f"🎖 Звание: *{title_name}*\n"
-        f"📚 Категория: *{category}*\n"
-        f"⭐ Опыт: *{rank.experience}*\n"
-        f"📊 Прогресс: {progress_bar} {int(progress)}%\n"
-        f"⏱ Всего времени в организациях: *{time_str}*\n"
-        f"🚗 Всего выездов: *{rank.visits_count}*"
-    )
-    await message.answer(msg_text, parse_mode="Markdown")
 
 
 @router.message(Command("status"))
