@@ -2,8 +2,8 @@ import logging
 import random
 
 from aiogram import Bot
-
 from core.bot_constants import BotRemidersCfg
+from services.crypto import get_crypto_rates
 from services.currency import get_currency_rates
 from services.weather import get_weather
 
@@ -48,3 +48,13 @@ async def send_currency_briefing(bot: Bot, chat_id: int):
         logger.info(f"Курсы валют отправлены в чат {chat_id}")
     except Exception as e:
         logger.error(f"Ошибка при отправке валют: {e}")
+
+
+async def send_crypto_briefing(bot: Bot, chat_id: int):
+    """Отправляет сводку курсов криптовалют."""
+    try:
+        text = await get_crypto_rates()
+        await bot.send_message(chat_id, text, parse_mode="HTML")
+        logger.info(f"Крипта отправлена в чат {chat_id}")
+    except Exception as e:
+        logger.error(f"Ошибка при отправке крипты: {e}")

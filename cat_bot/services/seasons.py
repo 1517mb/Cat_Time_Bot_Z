@@ -2,11 +2,10 @@ import datetime
 import logging
 import random
 
+from core import models
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from core import models
 
 logger = logging.getLogger(__name__)
 

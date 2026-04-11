@@ -6,10 +6,9 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from dotenv import load_dotenv
-
 from core.database import async_session_maker, engine
 from core.models import Base
+from dotenv import load_dotenv
 from handlers import base, info, scheduling, visits
 from middlewares.db import DbSessionMiddleware
 from services.seasons import create_season_if_needed
