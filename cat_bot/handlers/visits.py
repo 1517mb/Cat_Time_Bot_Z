@@ -38,7 +38,6 @@ async def cmd_cancel(message: Message, state: FSMContext):
         "Действие отменено.", reply_markup=ReplyKeyboardRemove()
     )
 
-
 @router.message(Command("join"), StateFilter(any_state))
 async def cmd_join(
     message: Message,
@@ -63,6 +62,7 @@ async def cmd_join(
 
     company_name = command.args.strip()
     company = await crud.get_company_by_name(session, company_name)
+    current_time_str = datetime.datetime.now().strftime("%H:%M")
 
     if company:
         await crud.create_activity(session, user_id, username, company.id)
@@ -79,8 +79,11 @@ async def cmd_join(
                                  parse_mode="Markdown")
 
         await session.commit()
-        await message.answer(f"🐱‍💻 Прибыли в: *{company.name}*",
-                             parse_mode="Markdown")
+        await message.answer(
+            f"🐱‍💻 Прибыли в: *{company.name}*\n"
+            f"⏳ Время прибытия: {current_time_str}",
+            parse_mode="Markdown"
+        )
     else:
         similar = await crud.get_similar_companies(session, company_name)
         if similar:
@@ -113,7 +116,8 @@ async def cmd_join(
             await session.commit()
             await message.answer(
                 f"✅ Создана новая организация: `{new_company.name}`\n"
-                f"🐱‍💻 Вы прибыли в: *{new_company.name}*",
+                f"🐱‍💻 Вы прибыли в: *{new_company.name}*\n"
+                f"⏳ Время прибытия: {current_time_str}",
                 parse_mode="Markdown",
             )
 
