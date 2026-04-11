@@ -8,8 +8,9 @@ from aiogram.enums import ParseMode
 from core.database import async_session_maker, engine
 from core.models import Base
 from dotenv import load_dotenv
-from handlers import base
+from handlers import base, info, visits
 from middlewares.db import DbSessionMiddleware
+from services.seasons import create_season_if_needed
 
 load_dotenv()
 
@@ -33,14 +34,16 @@ async def main():
     dp = Dispatcher()
     dp.update.middleware(DbSessionMiddleware(session_pool=async_session_maker))
     dp.include_router(base.router)
+    dp.include_router(visits.router)
+    dp.include_router(info.router)
     await init_db()
-
+    async with async_session_maker() as session:
+        await create_season_if_needed(session)
     logging.info("Бот запущен и готов к работе! "
                  "(Нажмите Ctrl+C для остановки)")
     try:
         await dp.start_polling(bot)
     finally:
         await bot.session.close()
-
 if __name__ == "__main__":
     asyncio.run(main())
