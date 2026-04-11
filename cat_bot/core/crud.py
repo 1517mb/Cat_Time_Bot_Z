@@ -1,10 +1,9 @@
 import datetime
 from typing import Optional, Sequence
 
-from sqlalchemy import select, func, and_
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from core import models
+from sqlalchemy import and_, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def get_company_by_name(
@@ -75,3 +74,48 @@ async def create_achievements_bulk(session: AsyncSession,
     achievements = [models.Achievement(**data) for data in achievements_data]
     session.add_all(achievements)
     await session.commit()
+
+
+async def get_current_season(session: AsyncSession) -> Optional[models.Season]:
+    """Ищет текущий активный сезон"""
+    stmt = select(
+        models.Season).where(models.Season.is_active == True)
+    return await session.scalar(stmt)
+
+
+async def update_user_rank(
+    session: AsyncSession,
+    user_id: int,
+    username: str,
+    exp_added: int,
+    time_added: datetime.timedelta
+) -> tuple[Optional[models.SeasonRank], bool, int]:
+    """Обновляет опыт и проверяет, не получил ли юзер новый уровень"""
+    season = await get_current_season(session)
+    if not season:
+        return None, False, 0
+    stmt = select(models.SeasonRank).where(
+        and_(models.SeasonRank.user_id == user_id,
+             models.SeasonRank.season_id == season.id)
+    )
+    rank = await session.scalar(stmt)
+    if not rank:
+        rank = models.SeasonRank(
+            user_id=user_id, username=username, season_id=season.id,
+            experience=0, level=1, visits_count=0
+        )
+        session.add(rank)
+    old_level = rank.level
+    rank.experience += exp_added
+    rank.total_time += time_added
+    rank.visits_count += 1
+    stmt_lvl = select(models.LevelTitle).where(
+        models.LevelTitle.min_experience <= rank.experience
+    ).order_by(models.LevelTitle.level.desc())
+    correct_level = await session.scalar(stmt_lvl)
+    level_up = False
+    if correct_level and correct_level.level != rank.level:
+        rank.level = correct_level.level
+        rank.level_title_id = correct_level.id
+        level_up = rank.level > old_level
+    return rank, level_up, rank.level
