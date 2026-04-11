@@ -2,6 +2,7 @@ import datetime
 from typing import Optional, Sequence
 
 from core import models
+from core.models import (Achievement, Season, UserActivity)
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -172,3 +173,43 @@ async def get_next_level_exp(session: AsyncSession, current_level: int) -> int:
     result = await session.execute(stmt)
     exp = result.scalar_one_or_none()
     return exp if exp is not None else 0
+
+
+async def get_full_daily_stats(session: AsyncSession):
+    today = datetime.datetime.now(datetime.timezone.utc).date()
+    stmt_exists = select(UserActivity).where(func.date(UserActivity.join_time) == today).limit(1)
+    exists = await session.scalar(stmt_exists)
+    if not exists:
+        return None
+    stmt_season = select(Season).where(Season.is_active == True)
+    season = await session.scalar(stmt_season)
+    stmt_exp = select(func.sum(UserActivity.experience_gained)).where(
+        func.date(UserActivity.join_time) == today
+    )
+    total_exp_today = await session.scalar(stmt_exp) or 0
+    stmt_user_acts = select(
+        UserActivity.user_id,
+        UserActivity.username,
+        func.count(UserActivity.id).label("trips"),
+        func.sum(
+            func.julianday(UserActivity.leave_time) - func.julianday(UserActivity.join_time)
+        ).label("total_days")
+    ).where(
+        and_(
+            func.date(UserActivity.join_time) == today,
+            UserActivity.leave_time.is_not(None)
+        )
+    ).group_by(UserActivity.user_id, UserActivity.username)
+    user_results = await session.execute(stmt_user_acts)
+    user_stats = user_results.all()
+    stmt_ach = select(Achievement).where(func.date(Achievement.achieved_at) == today)
+    ach_results = await session.execute(stmt_ach)
+    ach_list = ach_results.scalars().all()
+
+    return {
+        "season": season,
+        "total_exp_today": total_exp_today,
+        "user_stats": user_stats,
+        "achievements": ach_list,
+        "today": today
+    }
