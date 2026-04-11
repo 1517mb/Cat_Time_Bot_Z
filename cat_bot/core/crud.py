@@ -2,7 +2,7 @@ import datetime
 from typing import Optional, Sequence
 
 from core import models
-from core.models import (Achievement, Season, UserActivity)
+from core.models import Achievement, Season, UserActivity
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
