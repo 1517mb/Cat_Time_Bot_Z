@@ -11,12 +11,15 @@ from core.models import Base
 from dotenv import load_dotenv
 from handlers import base, info, news, profile, scheduling, tools, visits
 from middlewares.db import DbSessionMiddleware
-from services.seasons import create_season_if_needed
+from services.seasons import (check_and_update_seasons_task,
+                              create_season_if_needed)
 
 load_dotenv()
 
-logging.basicConfig(level=logging.INFO,
-                    format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 
 async def init_db():
@@ -30,27 +33,49 @@ async def main():
     bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not bot_token:
         raise ValueError("Токен бота не найден в .env!")
-    bot = Bot(token=bot_token, default=DefaultBotProperties(
-        parse_mode=ParseMode.MARKDOWN))
+    bot = Bot(
+        token=bot_token,
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+    )
     dp = Dispatcher()
     dp.update.middleware(DbSessionMiddleware(session_pool=async_session_maker))
-    dp.include_router(base.router)
     dp.include_router(profile.router)
     dp.include_router(visits.router)
-    dp.include_router(info.router)
+    dp.include_router(news.router)
     dp.include_router(scheduling.router)
     dp.include_router(tools.router)
-    dp.include_router(news.router)
-    scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
-    scheduler.start()
+    dp.include_router(base.router)
+    dp.include_router(info.router)
     await init_db()
     async with async_session_maker() as session:
         await create_season_if_needed(session)
-    logging.info("Бот запущен и готов к работе! "
-                 "(Нажмите Ctrl+C для остановки)")
+    scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
+    scheduler.add_job(
+        check_and_update_seasons_task,
+        trigger="cron",
+        hour=0,
+        minute=1,
+        id="check_seasons_daily",
+        args=[async_session_maker],
+        replace_existing=True
+    )
+    scheduler.start()
+    logging.info("🤖 Бот запущен и готов к работе! (Ctrl+C для остановки)")
     try:
         await dp.start_polling(bot, scheduler=scheduler)
     finally:
+        scheduler.shutdown()
         await bot.session.close()
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("Бот остановлен вручную.")
+    except Exception:
+        import traceback
+        print("\n" + "="*50)
+        print("❌ КРИТИЧЕСКАЯ ОШИБКА ПРИ ЗАПУСКЕ:")
+        traceback.print_exc()
+        print("="*50 + "\n")
+        input("Нажмите Enter, чтобы закрыть окно...")
