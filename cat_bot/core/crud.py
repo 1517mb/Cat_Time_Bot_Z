@@ -90,21 +90,36 @@ async def update_user_rank(
     exp_added: int,
     time_added: datetime.timedelta
 ) -> tuple[Optional[models.SeasonRank], bool, int]:
-    """Обновляет опыт и проверяет, не получил ли юзер новый уровень"""
+    """Обновляет опыт и выдает новые уровни."""
     season = await get_current_season(session)
     if not season:
         return None, False, 0
+
     stmt = select(models.SeasonRank).where(
-        and_(models.SeasonRank.user_id == user_id,
-             models.SeasonRank.season_id == season.id)
+        and_(
+            models.SeasonRank.user_id == user_id,
+            models.SeasonRank.season_id == season.id
+        )
     )
     rank = await session.scalar(stmt)
+
     if not rank:
         rank = models.SeasonRank(
-            user_id=user_id, username=username, season_id=season.id,
-            experience=0, level=1, visits_count=0
+            user_id=user_id,
+            username=username,
+            season_id=season.id,
+            experience=0,
+            level=1,
+            visits_count=0,
+            total_time=datetime.timedelta()
         )
         session.add(rank)
+    if rank.total_time is None:
+        rank.total_time = datetime.timedelta()
+    if rank.experience is None:
+        rank.experience = 0
+    if rank.visits_count is None:
+        rank.visits_count = 0
     old_level = rank.level
     rank.experience += exp_added
     rank.total_time += time_added
