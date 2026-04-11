@@ -4,6 +4,7 @@ from typing import Optional, Sequence
 from core import models
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 
 async def get_company_by_name(
@@ -134,3 +135,40 @@ async def update_user_rank(
         rank.level_title_id = correct_level.id
         level_up = rank.level > old_level
     return rank, level_up, rank.level
+
+
+async def get_total_trips_count(session: AsyncSession, user_id: int) -> int:
+    """Считает общее количество всех выездов пользователя за все время."""
+    stmt = select(func.count(models.UserActivity.id)).where(
+        models.UserActivity.user_id == user_id
+    )
+    result = await session.execute(stmt)
+    return result.scalar() or 0
+
+
+async def get_user_achievements(session: AsyncSession, user_id: int):
+    """Возвращает список всех достижений пользователя."""
+    stmt = select(models.Achievement).where(
+        models.Achievement.user_id == user_id
+    )
+    result = await session.execute(stmt)
+    return result.scalars().all()
+
+
+async def get_user_rank_info(session: AsyncSession, user_id: int):
+    """Получает информацию о ранге пользователя вместе с названием уровня."""
+    stmt = select(models.SeasonRank).options(
+        selectinload(models.SeasonRank.level_title)
+    ).where(models.SeasonRank.user_id == user_id)
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
+async def get_next_level_exp(session: AsyncSession, current_level: int) -> int:
+    """Возвращает min_experience для следующего уровня."""
+    stmt = select(models.LevelTitle.min_experience).where(
+        models.LevelTitle.level == current_level + 1
+    )
+    result = await session.execute(stmt)
+    exp = result.scalar_one_or_none()
+    return exp if exp is not None else 0
