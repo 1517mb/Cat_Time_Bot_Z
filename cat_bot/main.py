@@ -9,7 +9,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from core.database import async_session_maker, engine
 from core.models import Base
 from dotenv import load_dotenv
-from handlers import base, info, scheduling, visits
+from handlers import base, info, profile, scheduling, visits
 from middlewares.db import DbSessionMiddleware
 from services.seasons import create_season_if_needed
 
@@ -35,6 +35,7 @@ async def main():
     dp = Dispatcher()
     dp.update.middleware(DbSessionMiddleware(session_pool=async_session_maker))
     dp.include_router(base.router)
+    dp.include_router(profile.router)
     dp.include_router(visits.router)
     dp.include_router(info.router)
     dp.include_router(scheduling.router)
