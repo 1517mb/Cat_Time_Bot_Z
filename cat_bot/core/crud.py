@@ -10,20 +10,25 @@ from sqlalchemy.orm import selectinload
 
 
 async def get_company_by_name(
-        session: AsyncSession, name: str) -> Optional[models.Company]:
+    session: AsyncSession, name: str
+) -> Optional[models.Company]:
     stmt = select(models.Company).where(models.Company.name == name)
     return await session.scalar(stmt)
 
 
 async def get_similar_companies(
-        session: AsyncSession, name: str) -> Sequence[str]:
+    session: AsyncSession, name: str
+) -> Sequence[str]:
     stmt = select(models.Company.name).where(
-        models.Company.name.ilike(f"%{name}%"))
+        models.Company.name.ilike(f"%{name}%")
+    )
     result = await session.scalars(stmt)
     return result.all()
 
 
-async def create_company(session: AsyncSession, name: str) -> models.Company:
+async def create_company(
+    session: AsyncSession, name: str
+) -> models.Company:
     company = models.Company(name=name)
     session.add(company)
     await session.commit()
@@ -32,24 +37,29 @@ async def create_company(session: AsyncSession, name: str) -> models.Company:
 
 
 async def get_active_activity(
-        session: AsyncSession, user_id: int) -> Optional[models.UserActivity]:
-    """Возвращает текущий незавершенный выезд пользователя"""
-    stmt = select(models.UserActivity).where(
-        and_(
-            models.UserActivity.user_id == user_id,
-            models.UserActivity.leave_time.is_(None)
+    session: AsyncSession, user_id: int
+) -> Optional[models.UserActivity]:
+    """Возвращает текущий незавершенный выезд пользователя."""
+    stmt = (
+        select(models.UserActivity)
+        .where(
+            and_(
+                models.UserActivity.user_id == user_id,
+                models.UserActivity.leave_time.is_(None),
+            )
         )
-    ).order_by(models.UserActivity.join_time.desc())
+        .order_by(models.UserActivity.join_time.desc())
+    )
     return await session.scalar(stmt)
 
 
-async def create_activity(session: AsyncSession,
-                          user_id: int, username:
-                          str, company_id: int) -> models.UserActivity:
+async def create_activity(
+    session: AsyncSession, user_id: int, username: str, company_id: int
+) -> models.UserActivity:
     activity = models.UserActivity(
         user_id=user_id,
         username=username,
-        company_id=company_id
+        company_id=company_id,
     )
     session.add(activity)
     await session.commit()
@@ -58,31 +68,39 @@ async def create_activity(session: AsyncSession,
 
 
 async def get_today_trips_count(session: AsyncSession, user_id: int) -> int:
-    """Считает количество выездов за сегодня"""
+    """Считает количество выездов за сегодня."""
     today = datetime.datetime.now().date()
-    stmt = select(func.count()).select_from(models.UserActivity).where(
-        and_(
-            models.UserActivity.user_id == user_id,
-            func.date(models.UserActivity.join_time) == today
+    stmt = (
+        select(func.count())
+        .select_from(models.UserActivity)
+        .where(
+            and_(
+                models.UserActivity.user_id == user_id,
+                func.date(models.UserActivity.join_time) == today,
+            )
         )
     )
     return await session.scalar(stmt) or 0
 
 
-async def create_achievements_bulk(session: AsyncSession,
-                                   achievements_data: list[dict]):
-    """Массовое создание ачивок"""
+async def create_achievements_bulk(
+    session: AsyncSession, achievements_data: list[dict]
+):
+    """Массовое создание ачивок."""
     if not achievements_data:
         return
-    achievements = [models.Achievement(**data) for data in achievements_data]
+    achievements = [
+        models.Achievement(**data) for data in achievements_data
+    ]
     session.add_all(achievements)
     await session.commit()
 
 
-async def get_current_season(session: AsyncSession) -> Optional[models.Season]:
-    """Ищет текущий активный сезон"""
-    stmt = select(
-        models.Season).where(models.Season.is_active == True)
+async def get_current_season(
+    session: AsyncSession,
+) -> Optional[models.Season]:
+    """Ищет текущий активный сезон."""
+    stmt = select(models.Season).where(models.Season.is_active.is_(True))
     return await session.scalar(stmt)
 
 
@@ -91,7 +109,7 @@ async def update_user_rank(
     user_id: int,
     username: str,
     exp_added: int,
-    time_added: datetime.timedelta
+    time_added: datetime.timedelta,
 ) -> tuple[Optional[models.SeasonRank], bool, int]:
     """Обновляет опыт и выдает новые уровни."""
     season = await get_current_season(session)
@@ -101,7 +119,7 @@ async def update_user_rank(
     stmt = select(models.SeasonRank).where(
         and_(
             models.SeasonRank.user_id == user_id,
-            models.SeasonRank.season_id == season.id
+            models.SeasonRank.season_id == season.id,
         )
     )
     rank = await session.scalar(stmt)
@@ -114,33 +132,40 @@ async def update_user_rank(
             experience=0,
             level=1,
             visits_count=0,
-            total_time=datetime.timedelta()
+            total_time=datetime.timedelta(),
         )
         session.add(rank)
+
     if rank.total_time is None:
         rank.total_time = datetime.timedelta()
     if rank.experience is None:
         rank.experience = 0
     if rank.visits_count is None:
         rank.visits_count = 0
+
     old_level = rank.level
     rank.experience += exp_added
     rank.total_time += time_added
     rank.visits_count += 1
-    stmt_lvl = select(models.LevelTitle).where(
-        models.LevelTitle.min_experience <= rank.experience
-    ).order_by(models.LevelTitle.level.desc())
+
+    stmt_lvl = (
+        select(models.LevelTitle)
+        .where(models.LevelTitle.min_experience <= rank.experience)
+        .order_by(models.LevelTitle.level.desc())
+    )
     correct_level = await session.scalar(stmt_lvl)
     level_up = False
+
     if correct_level and correct_level.level != rank.level:
         rank.level = correct_level.level
         rank.level_title_id = correct_level.id
         level_up = rank.level > old_level
+
     return rank, level_up, rank.level
 
 
 async def get_total_trips_count(session: AsyncSession, user_id: int) -> int:
-    """Считает общее количество всех выездов пользователя за все время."""
+    """Считает общее количество всех выездов пользователя."""
     stmt = select(func.count(models.UserActivity.id)).where(
         models.UserActivity.user_id == user_id
     )
@@ -164,14 +189,16 @@ async def get_user_rank_info(session: AsyncSession, user_id: int):
         .join(Season, SeasonRank.season_id == Season.id)
         .options(selectinload(SeasonRank.level_title))
         .where(
-            SeasonRank.user_id == user_id, 
-            Season.is_active == True
+            SeasonRank.user_id == user_id,
+            Season.is_active.is_(True),
         )
     )
     return await session.scalar(stmt)
 
 
-async def get_next_level_exp(session: AsyncSession, current_level: int) -> int:
+async def get_next_level_exp(
+    session: AsyncSession, current_level: int
+) -> int:
     """Возвращает min_experience для следующего уровня."""
     stmt = select(models.LevelTitle.min_experience).where(
         models.LevelTitle.level == current_level + 1
@@ -183,32 +210,47 @@ async def get_next_level_exp(session: AsyncSession, current_level: int) -> int:
 
 async def get_full_daily_stats(session: AsyncSession):
     today = datetime.datetime.now(datetime.timezone.utc).date()
-    stmt_exists = select(UserActivity).where(func.date(UserActivity.join_time) == today).limit(1)
+    stmt_exists = (
+        select(UserActivity)
+        .where(func.date(UserActivity.join_time) == today)
+        .limit(1)
+    )
     exists = await session.scalar(stmt_exists)
     if not exists:
         return None
-    stmt_season = select(Season).where(Season.is_active == True)
+
+    stmt_season = select(Season).where(Season.is_active.is_(True))
     season = await session.scalar(stmt_season)
+
     stmt_exp = select(func.sum(UserActivity.experience_gained)).where(
         func.date(UserActivity.join_time) == today
     )
     total_exp_today = await session.scalar(stmt_exp) or 0
-    stmt_user_acts = select(
-        UserActivity.user_id,
-        UserActivity.username,
-        func.count(UserActivity.id).label("trips"),
-        func.sum(
-            func.julianday(UserActivity.leave_time) - func.julianday(UserActivity.join_time)
-        ).label("total_days")
-    ).where(
-        and_(
-            func.date(UserActivity.join_time) == today,
-            UserActivity.leave_time.is_not(None)
+
+    stmt_user_acts = (
+        select(
+            UserActivity.user_id,
+            UserActivity.username,
+            func.count(UserActivity.id).label("trips"),
+            func.sum(
+                func.julianday(UserActivity.leave_time)
+                - func.julianday(UserActivity.join_time)
+            ).label("total_days"),
         )
-    ).group_by(UserActivity.user_id, UserActivity.username)
+        .where(
+            and_(
+                func.date(UserActivity.join_time) == today,
+                UserActivity.leave_time.is_not(None),
+            )
+        )
+        .group_by(UserActivity.user_id, UserActivity.username)
+    )
     user_results = await session.execute(stmt_user_acts)
     user_stats = user_results.all()
-    stmt_ach = select(Achievement).where(func.date(Achievement.achieved_at) == today)
+
+    stmt_ach = select(Achievement).where(
+        func.date(Achievement.achieved_at) == today
+    )
     ach_results = await session.execute(stmt_ach)
     ach_list = ach_results.scalars().all()
 
@@ -217,41 +259,39 @@ async def get_full_daily_stats(session: AsyncSession):
         "total_exp_today": total_exp_today,
         "user_stats": user_stats,
         "achievements": ach_list,
-        "today": today
+        "today": today,
     }
 
 
-async def save_daily_statistics(session: AsyncSession, user_stats: list, today: datetime.date):
+async def save_daily_statistics(
+    session: AsyncSession, user_stats: list, today: datetime.date
+):
     """
-    Проходится по собранной статистике юзеров и записывает/обновляет её в DailyStatistics.
+    Записывает/обновляет собранную статистику в DailyStatistics.
     """
     for row in user_stats:
-        # Конвертируем дни в секунды (SQLite специфика)
         total_seconds = row.total_days * 86400
         total_time_delta = datetime.timedelta(seconds=total_seconds)
-        
-        # Проверяем, есть ли уже запись за сегодня для этого юзера
+
         stmt = select(DailyStatistics).where(
             and_(
                 DailyStatistics.user_id == row.user_id,
-                func.date(DailyStatistics.date) == today
+                func.date(DailyStatistics.date) == today,
             )
         )
         existing_stat = await session.scalar(stmt)
-        
+
         if existing_stat:
-            # Если бот упал и запустился снова, просто обновляем данные
             existing_stat.total_trips = row.trips
             existing_stat.total_time = total_time_delta
         else:
-            # Если бот упал и запустился снова, просто обновляем данные
             new_stat = DailyStatistics(
                 user_id=row.user_id,
                 username=row.username,
                 date=today,
                 total_time=total_time_delta,
-                total_trips=row.trips
+                total_trips=row.trips,
             )
             session.add(new_stat)
-            
+
     await session.commit()
