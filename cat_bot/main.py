@@ -1,12 +1,15 @@
+import argparse
 import asyncio
 import logging
 import os
+import sys
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from core.database import async_session_maker, engine
+from core.logger import setup_logging
 from core.models import Base
 from dotenv import load_dotenv
 from handlers import base, info, news, profile, scheduling, tools, visits
@@ -17,10 +20,7 @@ from services.seasons import (check_and_update_seasons_task,
 load_dotenv()
 CHAT_ID = os.getenv("CHAT_ID")
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
+setup_logging()
 
 
 async def init_db():
@@ -69,6 +69,22 @@ async def main():
         await bot.session.close()
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Cat_Time_Bot_Z Management Console")
+    parser.add_argument(
+        "--init_levels",
+        action="store_true",
+        help="Заполнить базу данных начальными уровнями и выйти"
+    )
+    args = parser.parse_args()
+    if args.init_levels:
+        print("🛠 Запуск скрипта инициализации уровней...")
+        from scripts.init_level import init_levels
+        try:
+            asyncio.run(init_levels())
+        except Exception as e:
+            print(f"❌ Ошибка при инициализации: {e}")
+        sys.exit(0)
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
