@@ -39,29 +39,31 @@
 Это самый быстрый способ развернуть бота со всеми зависимостями и правильным часовым поясом.
 
 ### 1. Подготовка
-Создайте в корне проекта пустой файл базы данных (чтобы Docker не создал вместо него папку):
+Создайте в папке бота пустой файл базы данных (чтобы Docker не создал вместо него директорию):
 ```bash
-touch sqlite.db
+touch cat_bot/sqlite.db
 ```
 
 ### 2. Запуск
+*(Если вы используете Linux/WSL и получаете ошибку прав доступа к сокету Docker, используйте команду с `sudo`)*:
 ```bash
-docker compose up -d --build
+sudo docker compose up -d --build
 ```
 
 ### 3. Первоначальная настройка (для новых пользователей)
 Если вы запускаете бота впервые, наполните базу уровнями:
 ```bash
-docker compose exec cat_bot python main.py --init_levels
+sudo docker compose exec cat_bot python main.py --init_levels
 ```
 
 ### 4. Миграция данных из архивного проекта
 Если вы переходите с архивной версии [cat_time_bot (Django)](https://github.com/1517mb/cat_time_bot):
-1. Положите файл вашей старой базы в корень проекта под именем `old_bot_database.db`.
+1. Положите файл вашей старой базы в папку `cat_bot/` под именем `old_bot_database.db`.
 2. Выполните команду миграции внутри работающего контейнера:
 ```bash
-docker compose exec cat_bot python main.py --migrate_db
+sudo docker compose exec cat_bot python main.py --migrate_db
 ```
+*(Если возникает ошибка доступа к `sqlite.db`, выполните на хосте: `sudo chmod 666 cat_bot/sqlite.db`)*
 
 ---
 
@@ -97,14 +99,15 @@ CHAT_ID=id_вашего_чата_для_рассылок
 ```
 
 ### 4. Инициализация базы данных и уровней
-Перед первым запуском необходимо загрузить в базу данных иерархию уровней (титулов).
+Перед первым запуском необходимо загрузить в базу данных иерархию уровней (титулов). Перейдите в папку `cat_bot` и выполните:
 ```bash
+cd cat_bot
 python main.py --init_levels
 ```
 
 ### 5. Миграция данных (из архивного проекта)
 Если вы переходите с архивной версии бота [cat_time_bot](https://github.com/1517mb/cat_time_bot) (Django), которая больше не поддерживается, вы можете перенести свои данные локально:
-1. Поместите файл вашей старой базы данных в корень проекта под именем `old_bot_database.db`.
+1. Поместите файл вашей старой базы данных в папку `cat_bot/` под именем `old_bot_database.db`.
 2. Запустите команду миграции:
 ```bash
 python main.py --migrate_db
@@ -133,29 +136,30 @@ pytest -v
 
 ```plaintext
 Cat_Time_Bot_Z/
+├── cat_bot/                # Основная директория бота и данные
+│   ├── core/               # Настройки БД, модели (models.py), запросы (crud.py), логгер
+│   ├── handlers/           # Обработчики команд (/profile, /join, /leave)
+│   ├── services/           # Бизнес-логика (статистика, сезоны, геймификация)
+│   ├── scripts/            # Утилиты (init_level.py, migrate_db.py)
+│   ├── tests/              # Автотесты (test_db.py, test_activities.py и др.)
+│   ├── logs/               # Директория с ротируемыми логами
+│   ├── sqlite.db           # Основная база данных
+│   ├── old_bot_database.db # Архивный дамп для миграции (опционально)
+│   └── main.py             # Точка входа, инициализация CLI и бота
 ├── venv/                   # Виртуальное окружение
-└── cat_bot/                # Основная директория бота
-    ├── core/               # Настройки БД, модели (models.py), запросы (crud.py), логгер
-    ├── handlers/           # Обработчики команд (/profile, /join, /leave)
-    ├── services/           # Бизнес-логика (статистика, сезоны, геймификация)
-    ├── scripts/            # Утилиты (init_level.py, migrate_db.py)
-    ├── tests/              # Автотесты (test_db.py, test_activities.py и др.)
-    ├── logs/               # Директория с ротируемыми логами
-    ├── docker-compose.yml  # Конфигурация Docker Compose
-    ├── Dockerfile          # Инструкция для сборки Docker-образа
-    ├── .dockerignore       # Исключения для Docker
-    ├── sqlite.db           # Основная база данных
-    ├── old_bot_database.db # Архивный дамп для миграции (опционально)
-    ├── pytest.ini          # Конфигурация для Pytest
-    ├── main.py             # Точка входа, инициализация CLI и бота
-    └── .env                # Секретные ключи (не коммитить!)
+├── docker-compose.yml      # Конфигурация Docker Compose
+├── Dockerfile              # Инструкция для сборки Docker-образа
+├── .dockerignore           # Исключения для Docker
+├── pytest.ini              # Конфигурация для Pytest
+├── requirements.txt        # Зависимости Python
+└── .env                    # Секретные ключи (не коммитить!)
 ```
 
 ## 📝 Планы дальнейшего развития
 
 - [ ] Перенос базы данных на PostgreSQL для production.
 - [ ] Развертывание Web-админки на базе FastAPI.
-- [ ] Упаковка проекта в Docker и деплой на сервер.
+- [x] Упаковка проекта в Docker и деплой на сервер.
 - [x] Интеграция антистресс-API с котиками.
 
 ## 🎉 Предложения и баги
