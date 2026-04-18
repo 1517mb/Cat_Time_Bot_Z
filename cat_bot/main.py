@@ -119,6 +119,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Заполнить базу данных начальными уровнями и выйти"
     )
+    parser.add_argument(
+        "--migrate_db",
+        action="store_true",
+        help="Перенести данные из old_bot_database.db в новую базу и выйти"
+    )
     args = parser.parse_args()
     if args.init_levels:
         print("🛠 Запуск скрипта инициализации уровней...")
@@ -127,6 +132,19 @@ if __name__ == "__main__":
             asyncio.run(init_levels())
         except Exception as e:
             print(f"❌ Ошибка при инициализации: {e}")
+        sys.exit(0)
+    if args.migrate_db:
+        print("📦 Запуск скрипта миграции старой базы данных...")
+        from scripts.migrate_db import main as migrate_main
+        try:
+            asyncio.run(migrate_main())
+        except SystemExit:
+            sys.exit(1)
+        except Exception as e:
+            print(f"❌ Ошибка при миграции: {e}")
+            import traceback
+            traceback.print_exc()
+            sys.exit(1)
         sys.exit(0)
     try:
         asyncio.run(main())
