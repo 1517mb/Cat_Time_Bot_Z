@@ -16,9 +16,13 @@ from handlers import base, info, news, profile, scheduling, tools, visits
 from middlewares.db import DbSessionMiddleware
 from services.seasons import (check_and_update_seasons_task,
                               create_season_if_needed)
+from services.tasks import (send_currency_briefing, send_daily_statistics_task,
+                            send_news_digest_task, send_transport_reminder,
+                            send_weather_briefing)
 
 load_dotenv()
 CHAT_ID = os.getenv("CHAT_ID")
+CHAT_ID_INT = int(CHAT_ID) if CHAT_ID else 0
 
 setup_logging()
 
@@ -51,13 +55,52 @@ async def main():
     async with async_session_maker() as session:
         await create_season_if_needed(session)
     scheduler = AsyncIOScheduler(timezone="Europe/Moscow")
+    # --- 00:01 (Сезоны) ---
     scheduler.add_job(
         check_and_update_seasons_task,
-        trigger="cron",
-        hour=0,
-        minute=1,
+        trigger="cron", hour=0, minute=1,
         id="check_seasons_daily",
-        args=[async_session_maker, bot, CHAT_ID],
+        args=[async_session_maker, bot, CHAT_ID_INT],
+        replace_existing=True
+    )
+    # --- 07:30 (Погода) ---
+    scheduler.add_job(
+        send_weather_briefing,
+        trigger="cron", hour=7, minute=30,
+        id=f"weather_{CHAT_ID}",
+        kwargs={"bot": bot, "chat_id": CHAT_ID_INT},
+        replace_existing=True
+    )
+    # --- 18:15 (Статистика) ---
+    scheduler.add_job(
+        send_daily_statistics_task,
+        trigger="cron", hour=18, minute=15,
+        id=f"daily_stats_{CHAT_ID}",
+        args=[bot, CHAT_ID_INT, async_session_maker],
+        replace_existing=True
+    )
+    # --- 21:00 (Напоминания) ---
+    scheduler.add_job(
+        send_transport_reminder,
+        trigger="cron", hour=21, minute=0,
+        id=f"reminder_{CHAT_ID}",
+        kwargs={"bot": bot, "chat_id": CHAT_ID_INT},
+        replace_existing=True
+    )
+    # --- 08:50 (Валюта) ---
+    scheduler.add_job(
+        send_currency_briefing,
+        trigger="cron", hour=8, minute=50,
+        id=f"currency_{CHAT_ID}",
+        kwargs={"bot": bot, "chat_id": CHAT_ID_INT},
+        replace_existing=True
+    )
+    # --- 07:25 (Новости) ---
+    scheduler.add_job(
+        send_news_digest_task,
+        trigger="cron", hour=7, minute=25,
+        id=f"news_digest_{CHAT_ID}",
+        args=[bot, CHAT_ID_INT],
         replace_existing=True
     )
     scheduler.start()
