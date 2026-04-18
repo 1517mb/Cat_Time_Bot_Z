@@ -1,5 +1,5 @@
-# Cat Time Bot Z — асинхронный Telegram-бот для учета рабочего времени
-# и геймификации активности IT-специалистов.
+# Cat Time Bot Z — asynchronous Telegram bot for time tracking
+# and gamification of the activity of IT specialists.
 # Copyright (C) 2026 https://github.com/1517mb
 #
 # This program is free software; you can redistribute it and/or modify
