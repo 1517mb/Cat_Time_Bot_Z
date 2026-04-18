@@ -156,4 +156,3 @@ if __name__ == "__main__":
         print("❌ КРИТИЧЕСКАЯ ОШИБКА ПРИ ЗАПУСКЕ:")
         traceback.print_exc()
         print("="*50 + "\n")
-        input("Нажмите Enter, чтобы закрыть окно...")
