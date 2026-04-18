@@ -1,0 +1,11 @@
+services:
+  cat_bot:
+    build: .
+    container_name: cat_time_bot_z
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./cat_bot/sqlite.db:/app/cat_bot/sqlite.db
+      - ./cat_bot/old_bot_database.db:/app/cat_bot/old_bot_database.db
+      - ./cat_bot/logs:/app/cat_bot/logs
