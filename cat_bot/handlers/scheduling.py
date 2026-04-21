@@ -29,7 +29,12 @@ async def cmd_start_reminder(
     time_str = command.args.strip()
     match = re.match(r"^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$", time_str)
     if not match:
-        return await message.answer("❌ Неверный формат (нужно ЧЧ:ММ).")
+        return await message.answer(
+            "❌ Неверный формат времени.\n\n"
+            "Пожалуйста, укажите время в формате *ЧЧ:ММ*.\n"
+            "👉 *Пример:* `08:30` или `18:45`",
+            parse_mode="Markdown"
+        )
 
     hour = int(match.group(1))
     minute = int(match.group(2))
@@ -81,7 +86,12 @@ async def cmd_start_weather(
     time_str = command.args.strip()
     match = re.match(r"^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$", time_str)
     if not match:
-        return await message.answer("❌ Неверный формат (нужно ЧЧ:ММ).")
+        return await message.answer(
+            "❌ Неверный формат времени для погоды.\n\n"
+            "Пожалуйста, используйте формат *ЧЧ:ММ*.\n"
+            "👉 *Пример:* `07:15` или `20:00`",
+            parse_mode="Markdown"
+        )
 
     hour = int(match.group(1))
     minute = int(match.group(2))
@@ -118,7 +128,11 @@ async def cmd_start_currency(
     time_str = command.args.strip()
     match = re.match(r"^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$", time_str)
     if not match:
-        return await message.answer("❌ Неверный формат.")
+        return await message.answer(
+            "❌ Неверный формат времени.\n\n"
+            "Пожалуйста, укажите время в формате <b>ЧЧ:ММ</b>.\n"
+            "👉 <b>Пример:</b> <code>08:50</code> или <code>12:00</code>"
+        )
 
     hour, minute = int(match.group(1)), int(match.group(2))
     chat_id = message.chat.id
@@ -154,7 +168,12 @@ async def cmd_start_crypto(
     time_str = command.args.strip()
     match = re.match(r"^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$", time_str)
     if not match:
-        return await message.answer("❌ Неверный формат.")
+        return await message.answer(
+            "❌ Неверный формат времени.\n\n"
+            "Пожалуйста, укажите время в формате *ЧЧ:ММ*.\n"
+            "👉 *Пример:* `08:51` или `21:30`",
+            parse_mode="Markdown"
+        )
 
     hour, minute = int(match.group(1)), int(match.group(2))
     chat_id = message.chat.id
@@ -187,11 +206,20 @@ async def cmd_start_stats(
     if not command.args:
         return await message.answer(
             "❌ Укажите время. Пример: <code>/start_stats 18:00</code>",
-            parse_mode="HTML")
+            parse_mode="HTML"
+        )
 
-    time_match = re.match(r"^([01]\d|2[0-3]):([0-5]\d)$", command.args.strip())
+    time_pattern = r"^([0-1]?[0-9]|2[0-3]):([0-5]\d)$"
+    time_match = re.match(time_pattern, command.args.strip())
+
     if not time_match:
-        return await message.answer("❌ Формат времени: ЧЧ:ММ")
+        return await message.answer(
+            "❌ Неверный формат времени для статистики.\n\n"
+            "Пожалуйста, укажите время в формате <b>ЧЧ:ММ</b>.\n"
+            "👉 <b>Пример:</b> <code>18:15</code> или "
+            "<code>20:00</code>",
+            parse_mode="HTML"
+        )
 
     hour, minute = time_match.groups()
     chat_id = message.chat.id
@@ -208,7 +236,7 @@ async def cmd_start_stats(
     )
 
     await message.answer(
-        f"📊 <b>Сводка активирована!</b>\n"
+        "📊 <b>Сводка активирована!</b>\n"
         f"Отчет по выездам ежедневно в <code>{hour}:{minute}</code>.",
         parse_mode="HTML"
     )
