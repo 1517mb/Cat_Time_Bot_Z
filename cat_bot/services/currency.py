@@ -5,6 +5,15 @@ import aiohttp
 
 logger = logging.getLogger(__name__)
 
+FLAGS = {
+    "USD": "🇺🇸",
+    "EUR": "🇪🇺",
+    "CNY": "🇨🇳",
+    "HKD": "🇭🇰",
+    "BYN": "🇧🇾",
+    "KZT": "🇰🇿"
+}
+
 
 async def fetch_currency_data():
     """Получает данные о курсах валют с API ЦБ РФ."""
@@ -20,16 +29,15 @@ async def fetch_currency_data():
     return None
 
 
-def format_currency_message(data) -> str:
+def format_currency_message(data: dict | None) -> str:
     """Форматирует JSON от ЦБ в красивое сообщение."""
     if not data:
         return "🚨 Не удалось получить данные о курсах валют."
 
     valutes = data.get("Valute", {})
     target_codes = ["USD", "EUR", "CNY", "HKD", "BYN", "KZT"]
-    lines = [
-        f"<b>📊 Курсы валют ЦБ РФ на {datetime.now().strftime('%d.%m')}</b>\n"
-    ]
+    date_str = datetime.now().strftime('%d.%m.%Y')
+    lines = [f"<b>📊 Курсы валют ЦБ РФ на {date_str}</b>\n"]
 
     for code in target_codes:
         v = valutes.get(code)
@@ -40,14 +48,21 @@ def format_currency_message(data) -> str:
         previous = v["Previous"]
         nominal = v["Nominal"]
         diff = value - previous
-        trend = "🔺" if diff > 0 else "🔻"
+        if diff > 0:
+            trend = "🟢"
+        elif diff < 0:
+            trend = "🔴"
+        else:
+            trend = "➖"
+
         nominal_str = f"{nominal} {code}" if nominal > 1 else code
+        flag = FLAGS.get(code, "🪙")
         lines.append(
-            f"• {name} ({nominal_str}): <b>{value:.2f}₽</b> "
+            f"{flag} {name} ({nominal_str}): <b>{value:.2f} ₽</b> "
             f"{trend} <i>({diff:+.2f})</i>"
         )
 
-    lines.append("\n<i>Данные обновляются по рабочим дням ЦБ РФ</i>")
+    lines.append("\n<i>🔄 Данные обновляются по рабочим дням ЦБ РФ</i>")
     return "\n".join(lines)
 
 
