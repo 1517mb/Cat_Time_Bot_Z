@@ -8,6 +8,7 @@ from aiogram.types import URLInputFile
 from core.bot_constants import BotRemidersCfg
 from core.crud import (get_full_daily_stats, get_next_level_exp,
                        get_user_rank_info, save_daily_statistics)
+from core.models import SeasonRank
 from handlers.tools import CAT_CAPTION, _fetch_cat_image
 from services.crypto import get_crypto_rates
 from services.currency import get_currency_rates
@@ -249,7 +250,7 @@ async def _build_user_block(
 
 async def _format_rank_progress(
     session,
-    rank: UserRank,
+    rank: SeasonRank,
 ) -> str:
     """Форматирует информацию об уровне и прогрессе пользователя."""
     if not rank or not rank.level_title:
@@ -270,7 +271,8 @@ async def _format_rank_progress(
     title = rank.level_title.title
     return (
         f"▸ Уровень: <b>{rank.level}</b> | <b>{title}</b>\n"
-        f"▸ Прогресс: <code>[{progress_bar}]</code> <b>{progress_percent}%</b>\n"
+        f"▸ Прогресс: <b>{progress_percent}%</b>\n"
+        f"<code>[{progress_bar}]</code>\n"
     )
 
 
