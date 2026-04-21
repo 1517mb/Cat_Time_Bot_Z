@@ -164,15 +164,6 @@ async def update_user_rank(
     return rank, level_up, rank.level
 
 
-async def get_total_trips_count(session: AsyncSession, user_id: int) -> int:
-    """Считает общее количество всех выездов пользователя."""
-    stmt = select(func.count(models.UserActivity.id)).where(
-        models.UserActivity.user_id == user_id
-    )
-    result = await session.execute(stmt)
-    return result.scalar() or 0
-
-
 async def get_user_achievements(session: AsyncSession, user_id: int):
     """Возвращает список всех достижений пользователя."""
     stmt = select(models.Achievement).where(
@@ -295,3 +286,15 @@ async def save_daily_statistics(
             session.add(new_stat)
 
     await session.commit()
+
+
+async def get_global_today_trips_count(session: AsyncSession) -> int:
+    """Возвращает общее количество выездов всех сотрудников за сегодня."""
+    today_start = datetime.datetime.now(datetime.timezone.utc).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    stmt = select(func.count()).select_from(models.UserActivity).where(
+        models.UserActivity.join_time >= today_start
+    )
+    result = await session.execute(stmt)
+    return result.scalar() or 0
