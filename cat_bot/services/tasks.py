@@ -36,18 +36,16 @@ def get_plural_days(n: int) -> str:
 
 
 async def send_transport_reminder(bot: Bot, chat_id: int):
-    """Отправляет напоминание о транспортных расходах в чат."""
     try:
         today = date.today()
         _, days_in_month = calendar.monthrange(today.year, today.month)
-
         days_left = days_in_month - today.day
+        target_days = [7, 3, 2]
+        if days_left != 0 and days_left not in target_days:
+            return
 
         if days_left == 0:
-            text = (
-                "⏳ Сегодня последний день месяца! "
-                "Не забудь проездной!"
-            )
+            text = "⏳ Сегодня последний день месяца! Не забудь проездной!"
         else:
             templates = BotRemidersCfg.TRANSPORT_REMINDER_TEMPLATES
             template = random.choice(templates)
