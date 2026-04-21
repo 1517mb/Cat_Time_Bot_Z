@@ -57,20 +57,6 @@ async def cmd_start_reminder(
     )
 
 
-@router.message(Command("stop_scheduler"))
-async def cmd_stop_scheduler(
-    message: Message, scheduler: AsyncIOScheduler
-):
-    chat_id = message.chat.id
-    job_id = f"reminder_{chat_id}"
-
-    if scheduler.get_job(job_id):
-        scheduler.remove_job(job_id)
-        await message.answer("🛑 Напоминания в этом чате отключены.")
-    else:
-        await message.answer("ℹ️ Активных напоминаний не найдено.")
-
-
 @router.message(Command("start_weather"), StateFilter(any_state))
 async def cmd_start_weather(
     message: Message,
@@ -250,3 +236,24 @@ async def cmd_stop_stats(message: Message, scheduler: AsyncIOScheduler):
         await message.answer("📊 Рассылка статистики отключена.")
     else:
         await message.answer("❓ Статистика не была настроена.")
+
+
+@router.message(Command("stop_scheduler"))
+async def cmd_stop_scheduler(
+    message: Message, scheduler: AsyncIOScheduler
+):
+    chat_id = message.chat.id
+    suffix = f"_{chat_id}"
+    removed_count = 0
+    for job in scheduler.get_jobs():
+        if job.id.endswith(suffix):
+            scheduler.remove_job(job.id)
+            removed_count += 1
+
+    if removed_count > 0:
+        await message.answer(
+            f"🛑 Все автоматические рассылки ({removed_count} шт.) "
+            f"в этом чате отключены."
+        )
+    else:
+        await message.answer("ℹ️ Активных рассылок в этом чате не найдено.")
