@@ -1,3 +1,4 @@
+import calendar
 import logging
 import random
 from datetime import date
@@ -23,19 +24,41 @@ SECONDS_IN_MINUTE = 60
 MAX_ACHIEVEMENTS_DISPLAY = 3
 
 
+def get_plural_days(n: int) -> str:
+    """Правильно склоняет слово 'день' в зависимости от числа."""
+    if n % 10 == 1 and n % 100 != 11:
+        return "день"
+    elif 2 <= n % 10 <= 4 and (n % 100 < 10 or n % 100 >= 20):
+        return "дня"
+    else:
+        return "дней"
+
+
 async def send_transport_reminder(bot: Bot, chat_id: int):
     """Отправляет напоминание о транспортных расходах в чат."""
     try:
-        template = random.choice(
-            BotRemidersCfg.TRANSPORT_REMINDER_TEMPLATES
-        )
-        days_left = random.choice(list(BotRemidersCfg.TRANSPORT_REMINDER_DAYS))
-        day_word = "дня" if days_left in [2, 4] else "дней"
-        text = template.format(
-            verb="Осталось",
-            days=days_left,
-            day_word=day_word
-        )
+        today = date.today()
+        _, days_in_month = calendar.monthrange(today.year, today.month)
+
+        days_left = days_in_month - today.day
+
+        if days_left == 0:
+            text = (
+                "⏳ Сегодня последний день месяца! "
+                "Не забудь проездной!"
+            )
+        else:
+            templates = BotRemidersCfg.TRANSPORT_REMINDER_TEMPLATES
+            template = random.choice(templates)
+            day_word = get_plural_days(days_left)
+            is_single = days_left % 10 == 1 and days_left % 100 != 11
+            verb = "Остался" if is_single else "Осталось"
+
+            text = template.format(
+                verb=verb,
+                days=days_left,
+                day_word=day_word
+            )
 
         await bot.send_message(chat_id, text, parse_mode="HTML")
         logger.info(f"Напоминание отправлено в чат {chat_id}")
