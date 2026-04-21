@@ -34,9 +34,9 @@ from handlers import base, info, news, profile, scheduling, tools, visits
 from middlewares.db import DbSessionMiddleware
 from services.seasons import (check_and_update_seasons_task,
                               create_season_if_needed)
-from services.tasks import (send_currency_briefing, send_daily_statistics_task,
-                            send_news_digest_task, send_transport_reminder,
-                            send_weather_briefing)
+from services.tasks import (send_crypto_briefing, send_currency_briefing,
+                            send_daily_statistics_task, send_news_digest_task,
+                            send_transport_reminder, send_weather_briefing)
 
 load_dotenv()
 CHAT_ID = os.getenv("CHAT_ID")
@@ -110,6 +110,14 @@ async def main():
         send_currency_briefing,
         trigger="cron", hour=8, minute=50,
         id=f"currency_{CHAT_ID}",
+        kwargs={"bot": bot, "chat_id": CHAT_ID_INT},
+        replace_existing=True
+    )
+    # --- 08:51 (Криптовалюта) ---
+    scheduler.add_job(
+        send_crypto_briefing,
+        trigger="cron", hour=8, minute=51,
+        id=f"crypto_{CHAT_ID}",
         kwargs={"bot": bot, "chat_id": CHAT_ID_INT},
         replace_existing=True
     )
