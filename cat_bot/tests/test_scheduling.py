@@ -69,16 +69,24 @@ async def test_start_reminder_invalid_format(mock_message, mock_scheduler):
 
 @pytest.mark.asyncio
 async def test_stop_scheduler_job_exists(mock_message, mock_scheduler):
-    mock_scheduler.get_job.return_value = True
+    mock_job_1 = MagicMock()
+    mock_job_1.id = f"reminder_{mock_message.chat.id}"
+    mock_job_2 = MagicMock()
+    mock_job_2.id = f"weather_{mock_message.chat.id}"
+    mock_scheduler.get_jobs.return_value = [mock_job_1, mock_job_2]
     await cmd_stop_scheduler(mock_message, mock_scheduler)
-    mock_scheduler.remove_job.assert_called_once_with(
+    assert mock_scheduler.remove_job.call_count == 2
+    mock_scheduler.remove_job.assert_any_call(
         f"reminder_{mock_message.chat.id}")
+    mock_scheduler.remove_job.assert_any_call(
+        f"weather_{mock_message.chat.id}")
     assert "отключены" in mock_message.answer.call_args[0][0]
+    assert "2 шт." in mock_message.answer.call_args[0][0]
 
 
 @pytest.mark.asyncio
 async def test_stop_scheduler_job_not_found(mock_message, mock_scheduler):
-    mock_scheduler.get_job.return_value = None
+    mock_scheduler.get_jobs.return_value = []
     await cmd_stop_scheduler(mock_message, mock_scheduler)
     mock_scheduler.remove_job.assert_not_called()
     assert "не найдено" in mock_message.answer.call_args[0][0]
