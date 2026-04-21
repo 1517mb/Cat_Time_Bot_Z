@@ -38,6 +38,7 @@ async def cmd_cancel(message: Message, state: FSMContext):
         "Действие отменено.", reply_markup=ReplyKeyboardRemove()
     )
 
+
 @router.message(Command("join"), StateFilter(any_state))
 async def cmd_join(
     message: Message,
@@ -66,8 +67,8 @@ async def cmd_join(
 
     if company:
         await crud.create_activity(session, user_id, username, company.id)
-        today_total = await crud.get_today_trips_count(session, user_id)
-        if today_total == 1:
+        global_today_total = await crud.get_global_today_trips_count(session)
+        if global_today_total == 1:
             session.add(
                 models.Achievement(
                     user_id=user_id,
@@ -75,7 +76,7 @@ async def cmd_join(
                     achievement_name="Первая кровь",
                 )
             )
-            await message.answer("🏆 Получено: *Первая кровь*!", 
+            await message.answer("🏆 Получено: *Первая кровь*!",
                                  parse_mode="Markdown")
 
         await session.commit()
@@ -101,8 +102,8 @@ async def cmd_join(
         else:
             new_company = await crud.create_company(session, company_name)
             await crud.create_activity(session, user_id, username, new_company.id)
-            today_total = await crud.get_today_trips_count(session, user_id)
-            if today_total == 1:
+            global_today_total = await crud.get_global_today_trips_count(session)
+            if global_today_total == 1:
                 session.add(
                     models.Achievement(
                         user_id=user_id,
@@ -145,8 +146,8 @@ async def process_existing_company(
         return await message.answer("❌ Ошибка: организация не найдена.")
 
     await crud.create_activity(session, user_id, username, company.id)
-    today_total = await crud.get_today_trips_count(session, user_id)
-    if today_total == 1:
+    global_today_total = await crud.get_global_today_trips_count(session)
+    if global_today_total == 1:
         session.add(
             models.Achievement(
                 user_id=user_id,
@@ -165,6 +166,7 @@ async def process_existing_company(
     )
     await state.clear()
 
+
 @router.message(StateFilter(JoinProcess.add_new_company))
 async def process_new_company(
     message: Message, session: AsyncSession, state: FSMContext
@@ -175,8 +177,8 @@ async def process_new_company(
 
     new_company = await crud.create_company(session, company_name)
     await crud.create_activity(session, user_id, username, new_company.id)
-    today_total = await crud.get_today_trips_count(session, user_id)
-    if today_total == 1:
+    global_today_total = await crud.get_global_today_trips_count(session)
+    if global_today_total == 1:
         session.add(
             models.Achievement(
                 user_id=user_id,
