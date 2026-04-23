@@ -1,6 +1,7 @@
 # 🐾 Cat Time Bot Z (FastAPI Edition)
 
 ![Лицензия](https://img.shields.io/github/license/1517mb/Cat_Time_Bot_Z)
+[![Python Tests](https://github.com/1517mb/Cat_Time_Bot_Z/actions/workflows/tests.yml/badge.svg)](https://github.com/1517mb/Cat_Time_Bot_Z/actions/workflows/tests.yml)
 <a href="https://www.python.org/" style="text-decoration: none;"><img src="https://img.shields.io/badge/Python-3.10+-blue?style=flat&logo=python&logoColor=ffdd54" height="20" alt="python"></a>
 <a href="https://docs.aiogram.dev/" style="text-decoration: none;"><img src="https://img.shields.io/badge/Aiogram-3.x-2CA5E0?style=flat&logo=telegram&logoColor=white" height="20" alt="aiogram"></a>
 <a href="https://docs.sqlalchemy.org/" style="text-decoration: none;"><img src="https://img.shields.io/badge/SQLAlchemy-2.0-D71F00?style=flat&logo=database&logoColor=white" height="20" alt="sqlalchemy"></a>
