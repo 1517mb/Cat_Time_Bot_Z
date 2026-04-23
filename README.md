@@ -1,28 +1,31 @@
 # 🐾 Cat Time Bot Z (FastAPI Edition)
 
 ![Лицензия](https://img.shields.io/github/license/1517mb/Cat_Time_Bot_Z)
-[![Python Tests](https://github.com/1517mb/Cat_Time_Bot_Z/actions/workflows/tests.yml/badge.svg)](https://github.com/1517mb/Cat_Time_Bot_Z/actions/workflows/tests.yml)
-<a href="https://www.python.org/" style="text-decoration: none;"><img src="https://img.shields.io/badge/Python-3.10+-blue?style=flat&logo=python&logoColor=ffdd54" height="20" alt="python"></a>
-<a href="https://docs.aiogram.dev/" style="text-decoration: none;"><img src="https://img.shields.io/badge/Aiogram-3.x-2CA5E0?style=flat&logo=telegram&logoColor=white" height="20" alt="aiogram"></a>
-<a href="https://docs.sqlalchemy.org/" style="text-decoration: none;"><img src="https://img.shields.io/badge/SQLAlchemy-2.0-D71F00?style=flat&logo=database&logoColor=white" height="20" alt="sqlalchemy"></a>
+[![Python Tests](https://github.com/1517mb/Cat_Time_Bot_Z/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/1517mb/Cat_Time_Bot_Z/actions/workflows/tests.yml)
+<a href="[https://www.python.org/](https://www.python.org/)" style="text-decoration: none;"><img src="[https://img.shields.io/badge/Python-3.10+-blue?style=flat&logo=python&logoColor=ffdd54](https://img.shields.io/badge/Python-3.10+-blue?style=flat&logo=python&logoColor=ffdd54)" height="20" alt="python"></a>
+<a href="[https://docs.aiogram.dev/](https://docs.aiogram.dev/)" style="text-decoration: none;"><img src="[https://img.shields.io/badge/Aiogram-3.x-2CA5E0?style=flat&logo=telegram&logoColor=white](https://img.shields.io/badge/Aiogram-3.x-2CA5E0?style=flat&logo=telegram&logoColor=white)" height="20" alt="aiogram"></a>
+<a href="[https://docs.sqlalchemy.org/](https://docs.sqlalchemy.org/)" style="text-decoration: none;"><img src="[https://img.shields.io/badge/SQLAlchemy-2.0-D71F00?style=flat&logo=database&logoColor=white](https://img.shields.io/badge/SQLAlchemy-2.0-D71F00?style=flat&logo=database&logoColor=white)" height="20" alt="sqlalchemy"></a>
 <br>
-<a href="https://github.com/1517mb/Cat_Time_Bot_Z/commits" style="text-decoration: none;"><img src="https://img.shields.io/github/commit-activity/w/1517mb/Cat_Time_Bot_Z" height="20" alt="commit-activity"></a>
-<a href="https://github.com/1517mb/Cat_Time_Bot_Z/commits" style="text-decoration: none;"><img src="https://img.shields.io/github/last-commit/1517mb/Cat_Time_Bot_Z" height="20" alt="last-commit"></a>
-<a href="https://github.com/1517mb/Cat_Time_Bot_Z/issues" style="text-decoration: none;"><img src="https://img.shields.io/github/issues/1517mb/Cat_Time_Bot_Z" height="20" alt="issues"></a>
+<a href="[https://github.com/1517mb/Cat_Time_Bot_Z/commits](https://github.com/1517mb/Cat_Time_Bot_Z/commits)" style="text-decoration: none;"><img src="[https://img.shields.io/github/commit-activity/w/1517mb/Cat_Time_Bot_Z](https://img.shields.io/github/commit-activity/w/1517mb/Cat_Time_Bot_Z)" height="20" alt="commit-activity"></a>
+<a href="[https://github.com/1517mb/Cat_Time_Bot_Z/commits](https://github.com/1517mb/Cat_Time_Bot_Z/commits)" style="text-decoration: none;"><img src="[https://img.shields.io/github/last-commit/1517mb/Cat_Time_Bot_Z](https://img.shields.io/github/last-commit/1517mb/Cat_Time_Bot_Z)" height="20" alt="last-commit"></a>
+<a href="[https://github.com/1517mb/Cat_Time_Bot_Z/issues](https://github.com/1517mb/Cat_Time_Bot_Z/issues)" style="text-decoration: none;"><img src="[https://img.shields.io/github/issues/1517mb/Cat_Time_Bot_Z](https://img.shields.io/github/issues/1517mb/Cat_Time_Bot_Z)" height="20" alt="issues"></a>
 <br>
-<img src="https://img.shields.io/github/repo-size/1517mb/Cat_Time_Bot_Z" height="20" alt="repo-size">
-<img src="https://img.shields.io/github/languages/code-size/1517mb/Cat_Time_Bot_Z" height="20" alt="code-size">
+<img src="[https://img.shields.io/github/repo-size/1517mb/Cat_Time_Bot_Z](https://img.shields.io/github/repo-size/1517mb/Cat_Time_Bot_Z)" height="20" alt="repo-size">
+<img src="[https://img.shields.io/github/languages/code-size/1517mb/Cat_Time_Bot_Z](https://img.shields.io/github/languages/code-size/1517mb/Cat_Time_Bot_Z)" height="20" alt="code-size">
 
 Асинхронный Telegram-бот на базе **Aiogram 3** и **SQLAlchemy** для геймифицированного учета рабочего времени и выездов IT-специалистов. Бот не только считает отработанные часы, но и награждает пользователей достижениями, повышает уровни (от "Укротителя USB" до "Архитектора Систем") и рассылает ежедневные сводки (погода, валюты ЦБ РФ, крипта).
 
 ## ✨ Ключевые возможности
-* ⏱ **Трекинг времени:** Команды `/join` и `/leave` для фиксации прибытия и ухода с точек.
+* ⏱ **Трекинг времени:** Команды `/join` и `/leave` для фиксации прибытия и ухода с точек. Редактирование времени через `/edit_start` и `/edit_end`.
 * 🎮 **Геймификация:** Умная система начисления опыта, сезонные ранги, 100 уникальных IT-званий и система достижений ("Первая кровь" и др.).
 * 📊 **Профиль:** Личный кабинет (`/profile`) с графическим прогресс-баром и статистикой.
 * ⏰ **Фоновые задачи и рассылки (APScheduler):**
   * `/start_reminder ЧЧ:ММ` — умное напоминание о транспортных расходах (динамически считает дни до конца месяца).
+  * `/start_leave_reminder ЧЧ:ММ` — напоминание сотрудникам о незакрытых выездах (чтобы никто не забыл нажать `/leave`).
   * `/start_stats ЧЧ:ММ` — автоматическая отправка ежедневного отчета по выездам.
-  * `/stop_scheduler` — полная отмена всех активных рассылок и напоминаний в текущем чате.
+  * `/start_news ЧЧ:ММ` — ежедневный IT-дайджест и кот-антистресс.
+  * **Отключение:** используйте приставку `stop_` вместо `start_` для точечной отмены (например, `/stop_weather`).
+  * `/stop_scheduler` — полная отмена **всех** активных рассылок и напоминаний в текущем чате.
 * 🌤 **Ежедневные сводки:**
   * `/start_weather ЧЧ:ММ` — детальная погода, прогноз, фазы луны и магнитные бури.
   * `/start_currency ЧЧ:ММ` — курсы фиатных валют с динамикой роста/падения.
@@ -127,8 +130,8 @@ python main.py
 
 ## 🧪 Тестирование
 
-Проект покрыт автоматизированными тестами. Тесты выполняются в изолированной `in-memory` базе данных.
-Для запуска тестов выполните команду в корне проекта:
+Проект покрыт автоматизированными тестами с использованием параметризации. Тесты выполняются в изолированной `in-memory` базе данных, имеется настроенный CI/CD пайплайн (GitHub Actions). 
+Для запуска тестов локально выполните команду в корне проекта:
 
 ```bash
 pytest -v
@@ -142,10 +145,10 @@ pytest -v
 Cat_Time_Bot_Z/
 ├── cat_bot/                # Основная директория бота и данные
 │   ├── core/               # Настройки БД, модели (models.py), запросы (crud.py), логгер
-│   ├── handlers/           # Обработчики команд (/profile, /join, /leave)
+│   ├── handlers/           # Обработчики команд (/profile, /join, /leave, рассылки)
 │   ├── services/           # Бизнес-логика (статистика, сезоны, геймификация)
 │   ├── scripts/            # Утилиты (init_level.py, migrate_db.py)
-│   ├── tests/              # Автотесты (test_db.py, test_activities.py и др.)
+│   ├── tests/              # Автотесты (test_db.py, test_tasks.py, test_scheduling.py и др.)
 │   ├── logs/               # Директория с ротируемыми логами
 │   ├── sqlite.db           # Основная база данных
 │   ├── old_bot_database.db # Архивный дамп для миграции (опционально)
@@ -165,6 +168,7 @@ Cat_Time_Bot_Z/
 - [ ] Развертывание Web-админки на базе FastAPI.
 - [x] Упаковка проекта в Docker и деплой на сервер.
 - [x] Интеграция антистресс-API с котиками.
+- [x] Покрытие ключевого функционала автотестами и настройка CI.
 
 ## 🎉 Предложения и баги
 Вы можете предложить свою идею, сообщить о баге или просто написать автору. Больше технических статей и гайдов можно найти на сайте [riopass.ru](https://riopass.ru).
