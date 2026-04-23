@@ -13,6 +13,70 @@ from services.tasks import (send_crypto_briefing, send_currency_briefing,
 router = Router()
 
 
+async def _enable_job(
+    message: Message,
+    command: CommandObject,
+    scheduler: AsyncIOScheduler,
+    job_prefix: str,
+    job_func,
+    success_text: str,
+    job_kwargs: dict | None = None,
+    job_args: list | None = None,
+):
+    """Универсальная функция для включения любой рассылки по времени."""
+    if not command.args:
+        return await message.answer(
+            f"❌ Укажите время: <code>/start_{job_prefix} ЧЧ:ММ</code>",
+            parse_mode="HTML",
+        )
+
+    time_str = command.args.strip()
+    pattern = r"^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$"
+    match = re.match(pattern, time_str)
+
+    if not match:
+        return await message.answer(
+            "❌ Неверный формат времени.\n\n"
+            "Пожалуйста, укажите время в формате <b>ЧЧ:ММ</b>.\n"
+            "👉 <b>Пример:</b> <code>08:30</code> или <code>18:45</code>",
+            parse_mode="HTML",
+        )
+
+    hour, minute = int(match.group(1)), int(match.group(2))
+    job_id = f"{job_prefix}_{message.chat.id}"
+
+    scheduler.add_job(
+        job_func,
+        trigger="cron",
+        hour=hour,
+        minute=minute,
+        id=job_id,
+        args=job_args or [],
+        kwargs=job_kwargs or {},
+        replace_existing=True,
+    )
+
+    await message.answer(
+        f"✅ {success_text} <b>{time_str}</b>!",
+        parse_mode="HTML",
+    )
+
+
+async def _disable_job(
+    message: Message,
+    scheduler: AsyncIOScheduler,
+    job_prefix: str,
+    desc: str,
+):
+    """Универсальная функция для отключения рассылки."""
+    job_id = f"{job_prefix}_{message.chat.id}"
+    if scheduler.get_job(job_id):
+        scheduler.remove_job(job_id)
+        await message.answer(f"🛑 {desc} отключена.")
+    else:
+        await message.answer(f"❓ {desc} не была настроена.")
+
+
 @router.message(Command("start_reminder"))
 async def cmd_start_reminder(
     message: Message,
@@ -20,40 +84,21 @@ async def cmd_start_reminder(
     scheduler: AsyncIOScheduler,
     bot: Bot,
 ):
-    if not command.args:
-        return await message.answer(
-            "❌ Укажите время: `/start_reminder ЧЧ:ММ`",
-            parse_mode="Markdown",
-        )
-
-    time_str = command.args.strip()
-    match = re.match(r"^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$", time_str)
-    if not match:
-        return await message.answer(
-            "❌ Неверный формат времени.\n\n"
-            "Пожалуйста, укажите время в формате *ЧЧ:ММ*.\n"
-            "👉 *Пример:* `08:30` или `18:45`",
-            parse_mode="Markdown"
-        )
-
-    hour = int(match.group(1))
-    minute = int(match.group(2))
-    chat_id = message.chat.id
-    job_id = f"reminder_{chat_id}"
-    if scheduler.get_job(job_id):
-        scheduler.remove_job(job_id)
-    scheduler.add_job(
-        send_transport_reminder,
-        trigger="cron",
-        hour=hour,
-        minute=minute,
-        id=job_id,
-        kwargs={"bot": bot, "chat_id": chat_id},
+    await _enable_job(
+        message,
+        command,
+        scheduler,
+        job_prefix="reminder",
+        job_func=send_transport_reminder,
+        success_text="Ежедневные напоминания включены на",
+        job_kwargs={"bot": bot, "chat_id": message.chat.id},
     )
 
-    await message.answer(
-        f"✅ Ежедневные напоминания включены на *{time_str}*!",
-        parse_mode="Markdown",
+
+@router.message(Command("stop_reminder"))
+async def cmd_stop_reminder(message: Message, scheduler: AsyncIOScheduler):
+    await _disable_job(
+        message, scheduler, "reminder", "Напоминание о проездном"
     )
 
 
@@ -64,39 +109,20 @@ async def cmd_start_weather(
     scheduler: AsyncIOScheduler,
     bot: Bot,
 ):
-    if not command.args:
-        return await message.answer(
-            "❌ Укажите время: `/start_weather ЧЧ:ММ`",
-            parse_mode="Markdown",
-        )
-    time_str = command.args.strip()
-    match = re.match(r"^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$", time_str)
-    if not match:
-        return await message.answer(
-            "❌ Неверный формат времени для погоды.\n\n"
-            "Пожалуйста, используйте формат *ЧЧ:ММ*.\n"
-            "👉 *Пример:* `07:15` или `20:00`",
-            parse_mode="Markdown"
-        )
+    await _enable_job(
+        message,
+        command,
+        scheduler,
+        job_prefix="weather",
+        job_func=send_weather_briefing,
+        success_text="Ежедневная сводка погоды включена на",
+        job_kwargs={"bot": bot, "chat_id": message.chat.id},
+    )
 
-    hour = int(match.group(1))
-    minute = int(match.group(2))
-    chat_id = message.chat.id
-    job_id = f"weather_{chat_id}"
-    if scheduler.get_job(job_id):
-        scheduler.remove_job(job_id)
-    scheduler.add_job(
-        send_weather_briefing,
-        trigger="cron",
-        hour=hour,
-        minute=minute,
-        id=job_id,
-        kwargs={"bot": bot, "chat_id": chat_id},
-    )
-    await message.answer(
-        f"✅ Ежедневная сводка погоды включена на *{time_str}*!",
-        parse_mode="Markdown",
-    )
+
+@router.message(Command("stop_weather"))
+async def cmd_stop_weather(message: Message, scheduler: AsyncIOScheduler):
+    await _disable_job(message, scheduler, "weather", "Сводка погоды")
 
 
 @router.message(Command("start_currency"), StateFilter(any_state))
@@ -106,37 +132,20 @@ async def cmd_start_currency(
     scheduler: AsyncIOScheduler,
     bot: Bot,
 ):
-    if not command.args:
-        return await message.answer(
-            "❌ Укажите время: `/start_currency ЧЧ:ММ`"
-        )
-
-    time_str = command.args.strip()
-    match = re.match(r"^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$", time_str)
-    if not match:
-        return await message.answer(
-            "❌ Неверный формат времени.\n\n"
-            "Пожалуйста, укажите время в формате <b>ЧЧ:ММ</b>.\n"
-            "👉 <b>Пример:</b> <code>08:50</code> или <code>12:00</code>"
-        )
-
-    hour, minute = int(match.group(1)), int(match.group(2))
-    chat_id = message.chat.id
-    job_id = f"currency_{chat_id}"
-
-    if scheduler.get_job(job_id):
-        scheduler.remove_job(job_id)
-
-    scheduler.add_job(
-        send_currency_briefing,
-        trigger="cron",
-        hour=hour,
-        minute=minute,
-        id=job_id,
-        kwargs={"bot": bot, "chat_id": chat_id},
+    await _enable_job(
+        message,
+        command,
+        scheduler,
+        job_prefix="currency",
+        job_func=send_currency_briefing,
+        success_text="Рассылка валют установлена на",
+        job_kwargs={"bot": bot, "chat_id": message.chat.id},
     )
 
-    await message.answer(f"✅ Рассылка валют установлена на *{time_str}*!")
+
+@router.message(Command("stop_currency"))
+async def cmd_stop_currency(message: Message, scheduler: AsyncIOScheduler):
+    await _disable_job(message, scheduler, "currency", "Рассылка валют")
 
 
 @router.message(Command("start_crypto"), StateFilter(any_state))
@@ -146,102 +155,46 @@ async def cmd_start_crypto(
     scheduler: AsyncIOScheduler,
     bot: Bot,
 ):
-    if not command.args:
-        return await message.answer(
-            "❌ Укажите время: `/start_crypto ЧЧ:ММ`", parse_mode="Markdown"
-        )
-
-    time_str = command.args.strip()
-    match = re.match(r"^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$", time_str)
-    if not match:
-        return await message.answer(
-            "❌ Неверный формат времени.\n\n"
-            "Пожалуйста, укажите время в формате *ЧЧ:ММ*.\n"
-            "👉 *Пример:* `08:51` или `21:30`",
-            parse_mode="Markdown"
-        )
-
-    hour, minute = int(match.group(1)), int(match.group(2))
-    chat_id = message.chat.id
-    job_id = f"crypto_{chat_id}"
-
-    if scheduler.get_job(job_id):
-        scheduler.remove_job(job_id)
-
-    scheduler.add_job(
-        send_crypto_briefing,
-        trigger="cron",
-        hour=hour,
-        minute=minute,
-        id=job_id,
-        kwargs={"bot": bot, "chat_id": chat_id},
+    await _enable_job(
+        message,
+        command,
+        scheduler,
+        job_prefix="crypto",
+        job_func=send_crypto_briefing,
+        success_text="Рассылка криптовалют установлена на",
+        job_kwargs={"bot": bot, "chat_id": message.chat.id},
     )
 
-    await message.answer(
-        f"✅ Рассылка криптовалют установлена на *{time_str}*!",
-        parse_mode="Markdown"
-    )
+
+@router.message(Command("stop_crypto"))
+async def cmd_stop_crypto(message: Message, scheduler: AsyncIOScheduler):
+    await _disable_job(message, scheduler, "crypto", "Рассылка криптовалют")
 
 
 @router.message(Command("start_stats"))
 async def cmd_start_stats(
-    message: Message,
-    command: CommandObject,
-    scheduler: AsyncIOScheduler
+    message: Message, command: CommandObject, scheduler: AsyncIOScheduler
 ):
-    if not command.args:
-        return await message.answer(
-            "❌ Укажите время. Пример: <code>/start_stats 18:00</code>",
-            parse_mode="HTML"
-        )
-
-    time_pattern = r"^([0-1]?[0-9]|2[0-3]):([0-5]\d)$"
-    time_match = re.match(time_pattern, command.args.strip())
-
-    if not time_match:
-        return await message.answer(
-            "❌ Неверный формат времени для статистики.\n\n"
-            "Пожалуйста, укажите время в формате <b>ЧЧ:ММ</b>.\n"
-            "👉 <b>Пример:</b> <code>18:15</code> или "
-            "<code>20:00</code>",
-            parse_mode="HTML"
-        )
-
-    hour, minute = time_match.groups()
-    chat_id = message.chat.id
-    job_id = f"daily_stats_{chat_id}"
-
-    scheduler.add_job(
-        send_daily_statistics_task,
-        trigger="cron",
-        hour=hour,
-        minute=minute,
-        id=job_id,
-        args=[message.bot, chat_id, async_session_maker],
-        replace_existing=True
-    )
-
-    await message.answer(
-        "📊 <b>Сводка активирована!</b>\n"
-        f"Отчет по выездам ежедневно в <code>{hour}:{minute}</code>.",
-        parse_mode="HTML"
+    await _enable_job(
+        message,
+        command,
+        scheduler,
+        job_prefix="daily_stats",
+        job_func=send_daily_statistics_task,
+        success_text="Сводка по выездам активирована на",
+        job_args=[message.bot, message.chat.id, async_session_maker],
     )
 
 
 @router.message(Command("stop_stats"))
 async def cmd_stop_stats(message: Message, scheduler: AsyncIOScheduler):
-    job_id = f"daily_stats_{message.chat.id}"
-    if scheduler.get_job(job_id):
-        scheduler.remove_job(job_id)
-        await message.answer("📊 Рассылка статистики отключена.")
-    else:
-        await message.answer("❓ Статистика не была настроена.")
+    await _disable_job(
+        message, scheduler, "daily_stats", "Рассылка статистики"
+    )
 
 
 @router.message(Command("stop_scheduler"))
-async def cmd_stop_scheduler(
-    message: Message, scheduler: AsyncIOScheduler
-):
+async def cmd_stop_scheduler(message: Message, scheduler: AsyncIOScheduler):
     chat_id = message.chat.id
     suffix = f"_{chat_id}"
     removed_count = 0
@@ -251,9 +204,10 @@ async def cmd_stop_scheduler(
             removed_count += 1
 
     if removed_count > 0:
-        await message.answer(
+        msg = (
             f"🛑 Все автоматические рассылки ({removed_count} шт.) "
             f"в этом чате отключены."
         )
+        await message.answer(msg)
     else:
         await message.answer("ℹ️ Активных рассылок в этом чате не найдено.")
