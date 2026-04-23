@@ -40,7 +40,7 @@ async def test_start_reminder_success(mock_message, mock_scheduler):
     assert call_kwargs['minute'] == 30
     assert call_kwargs['id'] == f"reminder_{mock_message.chat.id}"
     mock_message.answer.assert_called_once()
-    assert "включены на *09:30*" in mock_message.answer.call_args[0][0]
+    assert "включены на <b>09:30</b>" in mock_message.answer.call_args[0][0]
 
 
 @pytest.mark.asyncio
@@ -101,10 +101,10 @@ async def test_start_stats_success(mock_message, mock_scheduler):
 
         mock_scheduler.add_job.assert_called_once()
         call_args = mock_scheduler.add_job.call_args.kwargs
-        assert call_args['hour'] == "18"
-        assert call_args['minute'] == "00"
+        assert call_args['hour'] == 18
+        assert call_args['minute'] == 00
         mock_message.answer.assert_called_once()
-        assert "Сводка активирована" in mock_message.answer.call_args[0][0]
+        assert "Сводка по выездам активирована" in mock_message.answer.call_args[0][0]  # noqa: E501
 
 
 @pytest.mark.asyncio
@@ -116,7 +116,7 @@ async def test_start_stats_flexible_time_format(mock_message, mock_scheduler):
     with patch("handlers.scheduling.async_session_maker"):
         await cmd_start_stats(mock_message, command, mock_scheduler)
         mock_scheduler.add_job.assert_called_once()
-        assert "Сводка активирована" in mock_message.answer.call_args[0][0]
+        assert "Сводка по выездам активирована" in mock_message.answer.call_args[0][0]  # noqa: E501
 
 
 @pytest.mark.asyncio
@@ -135,7 +135,7 @@ async def test_start_crypto_success(mock_message, mock_scheduler):
     bot = mock_message.bot
     await cmd_start_crypto(mock_message, command, mock_scheduler, bot)
     mock_scheduler.add_job.assert_called_once()
-    assert "установлена на *08:51*" in mock_message.answer.call_args[0][0]
+    assert "установлена на <b>08:51</b>" in mock_message.answer.call_args[0][0]
 
 
 @pytest.mark.asyncio
@@ -151,7 +151,7 @@ async def test_start_weather_success(mock_message, mock_scheduler):
     assert call_kwargs['minute'] == 30
     assert call_kwargs['id'] == f"weather_{mock_message.chat.id}"
     mock_message.answer.assert_called_once()
-    assert "включена на *07:30*" in mock_message.answer.call_args[0][0]
+    assert "включена на <b>07:30</b>" in mock_message.answer.call_args[0][0]
 
 
 @pytest.mark.asyncio
@@ -167,4 +167,4 @@ async def test_start_currency_success(mock_message, mock_scheduler):
     assert call_kwargs['minute'] == 0
     assert call_kwargs['id'] == f"currency_{mock_message.chat.id}"
     mock_message.answer.assert_called_once()
-    assert "установлена на *12:00*" in mock_message.answer.call_args[0][0]
+    assert "установлена на <b>12:00</b>" in mock_message.answer.call_args[0][0]
