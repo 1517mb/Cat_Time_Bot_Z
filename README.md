@@ -2,16 +2,18 @@
 
 ![Лицензия](https://img.shields.io/github/license/1517mb/Cat_Time_Bot_Z)
 [![Python Tests](https://github.com/1517mb/Cat_Time_Bot_Z/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/1517mb/Cat_Time_Bot_Z/actions/workflows/tests.yml)
-<a href="[https://www.python.org/](https://www.python.org/)" style="text-decoration: none;"><img src="[https://img.shields.io/badge/Python-3.10+-blue?style=flat&logo=python&logoColor=ffdd54](https://img.shields.io/badge/Python-3.10+-blue?style=flat&logo=python&logoColor=ffdd54)" height="20" alt="python"></a>
-<a href="[https://docs.aiogram.dev/](https://docs.aiogram.dev/)" style="text-decoration: none;"><img src="[https://img.shields.io/badge/Aiogram-3.x-2CA5E0?style=flat&logo=telegram&logoColor=white](https://img.shields.io/badge/Aiogram-3.x-2CA5E0?style=flat&logo=telegram&logoColor=white)" height="20" alt="aiogram"></a>
-<a href="[https://docs.sqlalchemy.org/](https://docs.sqlalchemy.org/)" style="text-decoration: none;"><img src="[https://img.shields.io/badge/SQLAlchemy-2.0-D71F00?style=flat&logo=database&logoColor=white](https://img.shields.io/badge/SQLAlchemy-2.0-D71F00?style=flat&logo=database&logoColor=white)" height="20" alt="sqlalchemy"></a>
+[![Лицензия](https://img.shields.io/github/license/1517mb/Cat_Time_Bot_Z)](https://github.com/1517mb/Cat_Time_Bot_Z)
+[![Python Tests](https://github.com/1517mb/Cat_Time_Bot_Z/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/1517mb/Cat_Time_Bot_Z/actions/workflows/tests.yml)
+[![Python](https://img.shields.io/badge/Python-3.10+-blue?style=flat&logo=python&logoColor=ffdd54)](https://www.python.org/)
+[![Aiogram](https://img.shields.io/badge/Aiogram-3.x-2CA5E0?style=flat&logo=telegram&logoColor=white)](https://docs.aiogram.dev/)
+[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-D71F00?style=flat&logo=database&logoColor=white)](https://docs.sqlalchemy.org/)
 <br>
-<a href="[https://github.com/1517mb/Cat_Time_Bot_Z/commits](https://github.com/1517mb/Cat_Time_Bot_Z/commits)" style="text-decoration: none;"><img src="[https://img.shields.io/github/commit-activity/w/1517mb/Cat_Time_Bot_Z](https://img.shields.io/github/commit-activity/w/1517mb/Cat_Time_Bot_Z)" height="20" alt="commit-activity"></a>
-<a href="[https://github.com/1517mb/Cat_Time_Bot_Z/commits](https://github.com/1517mb/Cat_Time_Bot_Z/commits)" style="text-decoration: none;"><img src="[https://img.shields.io/github/last-commit/1517mb/Cat_Time_Bot_Z](https://img.shields.io/github/last-commit/1517mb/Cat_Time_Bot_Z)" height="20" alt="last-commit"></a>
-<a href="[https://github.com/1517mb/Cat_Time_Bot_Z/issues](https://github.com/1517mb/Cat_Time_Bot_Z/issues)" style="text-decoration: none;"><img src="[https://img.shields.io/github/issues/1517mb/Cat_Time_Bot_Z](https://img.shields.io/github/issues/1517mb/Cat_Time_Bot_Z)" height="20" alt="issues"></a>
+[![Commit Activity](https://img.shields.io/github/commit-activity/w/1517mb/Cat_Time_Bot_Z)](https://github.com/1517mb/Cat_Time_Bot_Z/commits)
+[![Last Commit](https://img.shields.io/github/last-commit/1517mb/Cat_Time_Bot_Z)](https://github.com/1517mb/Cat_Time_Bot_Z/commits)
+[![Issues](https://img.shields.io/github/issues/1517mb/Cat_Time_Bot_Z)](https://github.com/1517mb/Cat_Time_Bot_Z/issues)
 <br>
-<img src="[https://img.shields.io/github/repo-size/1517mb/Cat_Time_Bot_Z](https://img.shields.io/github/repo-size/1517mb/Cat_Time_Bot_Z)" height="20" alt="repo-size">
-<img src="[https://img.shields.io/github/languages/code-size/1517mb/Cat_Time_Bot_Z](https://img.shields.io/github/languages/code-size/1517mb/Cat_Time_Bot_Z)" height="20" alt="code-size">
+![Repo Size](https://img.shields.io/github/repo-size/1517mb/Cat_Time_Bot_Z)
+![Code Size](https://img.shields.io/github/languages/code-size/1517mb/Cat_Time_Bot_Z)
 
 Асинхронный Telegram-бот на базе **Aiogram 3** и **SQLAlchemy** для геймифицированного учета рабочего времени и выездов IT-специалистов. Бот не только считает отработанные часы, но и награждает пользователей достижениями, повышает уровни (от "Укротителя USB" до "Архитектора Систем") и рассылает ежедневные сводки (погода, валюты ЦБ РФ, крипта).
 
