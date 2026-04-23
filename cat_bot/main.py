@@ -35,7 +35,8 @@ from middlewares.db import DbSessionMiddleware
 from services.seasons import (check_and_update_seasons_task,
                               create_season_if_needed)
 from services.tasks import (send_crypto_briefing, send_currency_briefing,
-                            send_daily_statistics_task, send_news_digest_task,
+                            send_daily_statistics_task,
+                            send_leave_reminder_task, send_news_digest_task,
                             send_transport_reminder, send_weather_briefing)
 
 load_dotenv()
@@ -103,6 +104,14 @@ async def main():
         trigger="cron", hour=21, minute=0,
         id=f"reminder_{CHAT_ID}",
         kwargs={"bot": bot, "chat_id": CHAT_ID_INT},
+        replace_existing=True
+    )
+    # --- 21:30 (Напоминание о незакрытых выездах) ---
+    scheduler.add_job(
+        send_leave_reminder_task,
+        trigger="cron", hour=21, minute=30,
+        id=f"leave_reminder_{CHAT_ID}",
+        args=[bot, CHAT_ID_INT, async_session_maker],
         replace_existing=True
     )
     # --- 08:50 (Валюта) ---
