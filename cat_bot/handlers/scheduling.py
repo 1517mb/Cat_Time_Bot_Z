@@ -8,7 +8,8 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from core.database import async_session_maker
 from services.tasks import (send_crypto_briefing, send_currency_briefing,
                             send_daily_statistics_task,
-                            send_transport_reminder, send_weather_briefing)
+                            send_leave_reminder_task, send_transport_reminder,
+                            send_weather_briefing)
 
 router = Router()
 
@@ -190,6 +191,33 @@ async def cmd_start_stats(
 async def cmd_stop_stats(message: Message, scheduler: AsyncIOScheduler):
     await _disable_job(
         message, scheduler, "daily_stats", "Рассылка статистики"
+    )
+
+
+@router.message(Command("start_leave_reminder"))
+async def cmd_start_leave_reminder(
+    message: Message,
+    command: CommandObject,
+    scheduler: AsyncIOScheduler,
+    bot: Bot,
+):
+    await _enable_job(
+        message,
+        command,
+        scheduler,
+        job_prefix="leave_reminder",
+        job_func=send_leave_reminder_task,
+        success_text="Напоминание о незакрытых выездах включено на",
+        job_args=[bot, message.chat.id, async_session_maker],
+    )
+
+
+@router.message(Command("stop_leave_reminder"))
+async def cmd_stop_leave_reminder(message: Message,
+                                  scheduler: AsyncIOScheduler):
+    await _disable_job(
+        message, scheduler,
+        "leave_reminder", "Напоминание о незакрытых выездах"
     )
 
 
