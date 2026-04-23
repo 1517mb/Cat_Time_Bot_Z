@@ -111,4 +111,4 @@ async def test_leave_reminder_with_activities(
     sent_text = mock_bot.send_message.call_args.kwargs['text']
     assert "@test_user_forgot" in sent_text
     assert "Рога и Копыта" in sent_text
-    assert "находятся в организациях" in sent_text
+    assert "на объектах" in sent_text
