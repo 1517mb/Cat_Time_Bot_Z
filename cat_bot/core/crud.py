@@ -298,3 +298,16 @@ async def get_global_today_trips_count(session: AsyncSession) -> int:
     )
     result = await session.execute(stmt)
     return result.scalar() or 0
+
+
+async def get_all_active_activities(
+    session: AsyncSession,
+) -> Sequence[models.UserActivity]:
+    """Возвращает все незавершенные выезды всех пользователей."""
+    stmt = (
+        select(models.UserActivity)
+        .options(selectinload(models.UserActivity.company))
+        .where(models.UserActivity.leave_time.is_(None))
+    )
+    result = await session.scalars(stmt)
+    return result.all()
