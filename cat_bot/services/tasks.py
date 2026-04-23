@@ -40,7 +40,7 @@ async def send_transport_reminder(bot: Bot, chat_id: int):
         today = date.today()
         _, days_in_month = calendar.monthrange(today.year, today.month)
         days_left = days_in_month - today.day
-        target_days = [7, 3, 2]
+        target_days = [7, 3, 2, 1]
         if days_left != 0 and days_left not in target_days:
             return
 

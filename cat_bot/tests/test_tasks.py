@@ -68,6 +68,4 @@ async def test_reminder_many_days_left(mock_cfg, mock_date, mock_bot):
     mock_date.today.return_value = date(2026, 4, 19)
     mock_cfg.TRANSPORT_REMINDER_TEMPLATES = ["{verb} {days} {day_word}"]
     await send_transport_reminder(mock_bot, 12345)
-    mock_bot.send_message.assert_called_once()
-    sent_text = mock_bot.send_message.call_args[0][1]
-    assert sent_text == "Осталось 11 дней"
+    mock_bot.send_message.assert_not_called()
