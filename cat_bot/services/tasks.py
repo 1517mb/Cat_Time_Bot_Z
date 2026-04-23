@@ -4,10 +4,12 @@ import random
 from datetime import date
 
 from aiogram import Bot
+from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 from aiogram.types import URLInputFile
 from core.bot_constants import BotRemidersCfg
-from core.crud import (get_full_daily_stats, get_next_level_exp,
-                       get_user_rank_info, save_daily_statistics)
+from core.crud import (get_all_active_activities, get_full_daily_stats,
+                       get_next_level_exp, get_user_rank_info,
+                       save_daily_statistics)
 from core.models import SeasonRank
 from handlers.tools import CAT_CAPTION, _fetch_cat_image
 from services.crypto import get_crypto_rates
@@ -297,3 +299,68 @@ def _format_global_metrics(total_trips: int, total_seconds: int) -> str:
         f" • Общее время: <b>{format_duration_clean(total_seconds)}</b>\n"
         f" • Среднее время: <b>{format_duration_clean(global_avg)}</b>"
     )
+
+
+async def send_leave_reminder_task(
+    bot: Bot,
+    chat_id: int,
+    session_maker: async_sessionmaker,
+):
+    """Задача для напоминания пользователям о необходимости /leave."""
+    try:
+        async with session_maker() as session:
+            active_activities = await get_all_active_activities(session)
+
+        if not active_activities:
+            return
+        users = []
+        for activity in active_activities:
+            username = (
+                f"@{activity.username}"
+                if activity.username
+                else f"ID: {activity.user_id}"
+            )
+            company_name = (
+                activity.company.name if activity.company else "Неизвестно"
+            )
+            users.append(f"• {username} (<b>{company_name}</b>)")
+        users_list_str = "\n".join(users)
+        message = (
+            "⚠️ <b>Внимание!</b> ⚠️\n\n"
+            "Следующие сотрудники всё ещё находятся в организациях:\n"
+            f"{users_list_str}\n\n"
+            "🛠️ <b>Что нужно сделать?</b>\n"
+            "1. Если вы уже покинули организацию — "
+            "<b>проигнорируйте это сообщение</b>.\n"
+            "2. Если ещё не ушли — выберите действие:\n\n"
+            "📍 <b>Доступные команды:</b>\n"
+            "• <code>/edit_start ЧЧ:ММ</code> — "
+            "скорректировать время прибытия "
+            "(пример: <code>/edit_start 09:30</code>)\n"
+            "• <code>/edit_end ЧЧ:ММ</code> — изменить время убытия и "
+            "завершить сессию (пример: <code>/edit_end 18:15</code>)\n"
+            "<i>Команда работает как leave</i>\n\n"
+            "❗ <b>Важно:</b>\n"
+            "— Работает только для <b>активных</b> сессий "
+            "(где вы сейчас числитесь программно)\n"
+            "— Формат времени: 09:00, 14:30 (24-часовой)"
+        )
+        await bot.send_message(
+            chat_id=chat_id,
+            text=message,
+            parse_mode="HTML"
+        )
+        logger.info(f"Напоминание о незакрытых выездах отправлено в {chat_id}")
+    except TelegramBadRequest as e:
+        logger.error(f"Ошибка отправки (Bad Request): {e.message}")
+        if "chat not found" in str(e).lower():
+            logger.critical("Бот не добавлен в группу или chat_id неверный!")
+    except TelegramForbiddenError as e:
+        logger.error(f"Нет прав на отправку (Forbidden): {e.message}")
+        if "bot was blocked" in str(e).lower():
+            logger.critical("Бот заблокирован в группе!")
+    except Exception as e:
+        logger.error(
+            f"Критическая ошибка в send_leave_reminder_task: {e}",
+            exc_info=True
+        )
