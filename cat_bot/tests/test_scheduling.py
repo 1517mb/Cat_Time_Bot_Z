@@ -3,20 +3,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from aiogram.filters import CommandObject
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-
-from handlers.scheduling import (
-    cmd_start_crypto,
-    cmd_start_currency,
-    cmd_start_reminder,
-    cmd_start_stats,
-    cmd_start_weather,
-    cmd_stop_crypto,
-    cmd_stop_currency,
-    cmd_stop_reminder,
-    cmd_stop_scheduler,
-    cmd_stop_stats,
-    cmd_stop_weather,
-)
+from handlers.scheduling import (cmd_start_crypto, cmd_start_currency,
+                                 cmd_start_leave_reminder, cmd_start_reminder,
+                                 cmd_start_stats, cmd_start_weather,
+                                 cmd_stop_crypto, cmd_stop_currency,
+                                 cmd_stop_leave_reminder, cmd_stop_reminder,
+                                 cmd_stop_scheduler, cmd_stop_stats,
+                                 cmd_stop_weather)
 
 
 @pytest.fixture
@@ -43,6 +36,7 @@ def mock_scheduler():
         (cmd_start_weather, "07:30", 7, 30, "weather", "<b>07:30</b>"),
         (cmd_start_currency, "12:00", 12, 0, "currency", "<b>12:00</b>"),
         (cmd_start_crypto, "08:51", 8, 51, "crypto", "<b>08:51</b>"),
+        (cmd_start_leave_reminder, "21:30", 21, 30, "leave_reminder", "<b>21:30</b>"),  # noqa: E501
     ],
 )
 @pytest.mark.asyncio
@@ -119,10 +113,6 @@ async def test_start_commands_invalid_format(mock_message, mock_scheduler):
     assert "Неверный формат" in mock_message.answer.call_args[0][0]
 
 
-# =====================================================================
-# ТЕСТЫ ДЛЯ КОМАНД STOP
-# =====================================================================
-
 @pytest.mark.parametrize(
     "cmd_func, job_prefix",
     [
@@ -131,6 +121,7 @@ async def test_start_commands_invalid_format(mock_message, mock_scheduler):
         (cmd_stop_currency, "currency"),
         (cmd_stop_crypto, "crypto"),
         (cmd_stop_stats, "daily_stats"),
+        (cmd_stop_leave_reminder, "leave_reminder"),
     ],
 )
 @pytest.mark.asyncio
@@ -153,6 +144,7 @@ async def test_stop_commands_success(
         cmd_stop_currency,
         cmd_stop_crypto,
         cmd_stop_stats,
+        cmd_stop_leave_reminder,
     ],
 )
 @pytest.mark.asyncio
