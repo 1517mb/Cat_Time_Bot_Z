@@ -98,10 +98,10 @@ async def main():
         args=[bot, CHAT_ID_INT, async_session_maker],
         replace_existing=True
     )
-    # --- 21:00 (Напоминания) ---
+    # --- 9:00 (Напоминания) ---
     scheduler.add_job(
         send_transport_reminder,
-        trigger="cron", hour=21, minute=0,
+        trigger="cron", hour=9, minute=0,
         id=f"reminder_{CHAT_ID}",
         kwargs={"bot": bot, "chat_id": CHAT_ID_INT},
         replace_existing=True
