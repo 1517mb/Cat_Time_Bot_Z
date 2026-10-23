@@ -1,5 +1,6 @@
 
 import datetime
+from unittest.mock import patch
 
 from core import crud, models
 
@@ -22,31 +23,34 @@ async def test_today_trips_count(db_session):
     """Тест: проверка счетчика выездов за сегодня"""
     user_id = 777
     username = "hardworker"
+    current_time = datetime.datetime(2026, 4, 17, 12)
     company = await crud.create_company(db_session, "ЗАО Вектор")
     activity1 = models.UserActivity(
         user_id=user_id,
         username=username,
         company_id=company.id,
-        join_time=datetime.datetime.now() - datetime.timedelta(hours=2),
-        leave_time=datetime.datetime.now() - datetime.timedelta(hours=1)
+        join_time=current_time - datetime.timedelta(hours=2),
+        leave_time=current_time - datetime.timedelta(hours=1)
     )
     activity2 = models.UserActivity(
         user_id=user_id,
         username=username,
         company_id=company.id,
-        join_time=datetime.datetime.now() - datetime.timedelta(minutes=30),
+        join_time=current_time - datetime.timedelta(minutes=30),
     )
     db_session.add_all([activity1, activity2])
     activity_yesterday = models.UserActivity(
         user_id=user_id,
         username=username,
         company_id=company.id,
-        join_time=datetime.datetime.now() - datetime.timedelta(
+        join_time=current_time - datetime.timedelta(
             days=1, hours=2),
-        leave_time=datetime.datetime.now() - datetime.timedelta(
+        leave_time=current_time - datetime.timedelta(
             days=1, hours=1)
     )
     db_session.add(activity_yesterday)
     await db_session.commit()
-    count = await crud.get_today_trips_count(db_session, user_id)
+    with patch("core.crud.datetime") as mock_datetime:
+        mock_datetime.datetime.now.return_value = current_time
+        count = await crud.get_today_trips_count(db_session, user_id)
     assert count == 2
