@@ -1,12 +1,14 @@
+import asyncio
 import logging
 
 import aiohttp
 from aiogram import Router
 from aiogram.exceptions import TelegramAPIError
 from aiogram.filters import Command
-from aiogram.types import Message, URLInputFile
+from aiogram.types import Message
 
 CAT_API_URL = "https://api.thecatapi.com/v1/images/search"
+CAT_API_TIMEOUT = aiohttp.ClientTimeout(total=10)
 CAT_ERROR_MSG = "😿 Кот-сервис временно недоступен (код: MEOW_503)."
 CAT_CAPTION = "🐾 <i>Образец мурчания успешно получен!</i>"
 GROUP_TYPES = {"group", "supergroup", "channel"}
@@ -124,24 +126,41 @@ async def cmd_mew(message: Message) -> None:
     """Отправляет случайное фото котика."""
     try:
         cat_url = await _fetch_cat_image()
-        photo = URLInputFile(cat_url)
+    except (aiohttp.ClientError, asyncio.TimeoutError) as error:
+        logger.warning("Cat API request failed (%s): %s", type(error).__name__, error)
+        await _answer_cat_error(message)
+        return
+    except (KeyError, IndexError, TypeError, ValueError) as error:
+        logger.warning("Unexpected Cat API response: %s", error)
+        await _answer_cat_error(message)
+        return
+
+    try:
         await message.answer_photo(
-            photo,
+            photo=cat_url,
             caption=CAT_CAPTION,
             parse_mode="HTML"
         )
-    except aiohttp.ClientError as error:
-        logger.error("Cat API request failed: %s", error)
+    except TelegramAPIError as error:
+        logger.warning("Failed to send cat photo %s: %s", cat_url, error)
+        await _answer_cat_error(message)
+
+
+async def _answer_cat_error(message: Message) -> None:
+    """Сообщает об ошибке, если Telegram доступен."""
+    try:
         await message.answer(CAT_ERROR_MSG)
-    except (KeyError, IndexError) as error:
-        logger.error("Unexpected Cat API response: %s", error)
-        await message.answer(CAT_ERROR_MSG)
+    except TelegramAPIError as error:
+        logger.warning("Failed to send cat error message: %s", error)
 
 
 async def _fetch_cat_image() -> str:
     """Загружает URL случайного котика из API."""
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(timeout=CAT_API_TIMEOUT) as session:
         async with session.get(CAT_API_URL) as response:
             response.raise_for_status()
             data = await response.json()
-            return data[0]["url"]
+            cat_url = data[0]["url"]
+            if not isinstance(cat_url, str) or not cat_url.startswith(("https://", "http://")):
+                raise ValueError("Cat API response has no valid image URL")
+            return cat_url
