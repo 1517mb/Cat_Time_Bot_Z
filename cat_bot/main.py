@@ -171,6 +171,7 @@ if __name__ == "__main__":
             asyncio.run(init_levels())
         except Exception:
             logger.exception("Ошибка при инициализации уровней")
+            sys.exit(1)
         sys.exit(0)
     if args.migrate_db:
         logger.info("Запуск скрипта миграции старой базы данных")
