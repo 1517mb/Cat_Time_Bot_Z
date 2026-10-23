@@ -32,6 +32,7 @@ from core.models import Base
 from dotenv import load_dotenv
 from handlers import base, info, news, profile, scheduling, tools, visits
 from middlewares.db import DbSessionMiddleware
+from middlewares.logging import UpdateLoggingMiddleware, log_update_error
 from services.seasons import (check_and_update_seasons_task,
                               create_season_if_needed)
 from services.tasks import (send_crypto_briefing, send_currency_briefing,
@@ -44,13 +45,14 @@ CHAT_ID = os.getenv("CHAT_ID")
 CHAT_ID_INT = int(CHAT_ID) if CHAT_ID else 0
 
 setup_logging()
+logger = logging.getLogger(__name__)
 
 
 async def init_db():
     """Создает таблицы в базе данных (если их еще нет)"""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-        logging.info("База данных инициализирована.")
+        logger.info("База данных инициализирована.")
 
 
 async def main():
@@ -62,6 +64,8 @@ async def main():
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
     dp = Dispatcher()
+    dp.update.outer_middleware(UpdateLoggingMiddleware())
+    dp.errors.register(log_update_error)
     dp.update.middleware(DbSessionMiddleware(session_pool=async_session_maker))
     dp.include_router(profile.router)
     dp.include_router(visits.router)
@@ -139,7 +143,7 @@ async def main():
         replace_existing=True
     )
     scheduler.start()
-    logging.info("🤖 Бот запущен и готов к работе! (Ctrl+C для остановки)")
+    logger.info("🤖 Бот запущен и готов к работе! (Ctrl+C для остановки)")
     try:
         await dp.start_polling(bot, scheduler=scheduler)
     finally:
@@ -161,33 +165,27 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     if args.init_levels:
-        print("🛠 Запуск скрипта инициализации уровней...")
+        logger.info("Запуск скрипта инициализации уровней")
         from scripts.init_level import init_levels
         try:
             asyncio.run(init_levels())
-        except Exception as e:
-            print(f"❌ Ошибка при инициализации: {e}")
+        except Exception:
+            logger.exception("Ошибка при инициализации уровней")
         sys.exit(0)
     if args.migrate_db:
-        print("📦 Запуск скрипта миграции старой базы данных...")
+        logger.info("Запуск скрипта миграции старой базы данных")
         from scripts.migrate_db import main as migrate_main
         try:
             asyncio.run(migrate_main())
         except SystemExit:
             sys.exit(1)
-        except Exception as e:
-            print(f"❌ Ошибка при миграции: {e}")
-            import traceback
-            traceback.print_exc()
+        except Exception:
+            logger.exception("Ошибка при миграции")
             sys.exit(1)
         sys.exit(0)
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("Бот остановлен вручную.")
+        logger.info("Бот остановлен вручную.")
     except Exception:
-        import traceback
-        print("\n" + "="*50)
-        print("❌ КРИТИЧЕСКАЯ ОШИБКА ПРИ ЗАПУСКЕ:")
-        traceback.print_exc()
-        print("="*50 + "\n")
+        logger.critical("Критическая ошибка запуска или работы бота", exc_info=True)

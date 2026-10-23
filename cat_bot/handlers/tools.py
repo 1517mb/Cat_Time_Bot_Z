@@ -25,7 +25,10 @@ async def cmd_get_chat_info(message: Message) -> None:
     try:
         full_chat = await message.bot.get_chat(chat_id)
     except TelegramAPIError as error:
-        logger.warning("Failed to get chat %s: %s", chat_id, error)
+        logger.warning(
+            "Failed to get chat (%s): %s", type(error).__name__, error,
+            extra={"chat_id": chat_id, "operation": "get_chat"},
+        )
         await message.answer(
             f"❌ Ошибка доступа к чату: <code>{error}</code>",
             parse_mode="HTML"
@@ -127,11 +130,17 @@ async def cmd_mew(message: Message) -> None:
     try:
         cat_url = await _fetch_cat_image()
     except (aiohttp.ClientError, asyncio.TimeoutError) as error:
-        logger.warning("Cat API request failed (%s): %s", type(error).__name__, error)
+        logger.warning(
+            "Cat API request failed (%s): %s", type(error).__name__, error,
+            extra={"chat_id": message.chat.id, "provider": "TheCatAPI", "operation": "fetch_cat_image"},
+        )
         await _answer_cat_error(message)
         return
-    except (KeyError, IndexError, TypeError, ValueError) as error:
-        logger.warning("Unexpected Cat API response: %s", error)
+    except (KeyError, IndexError, TypeError, ValueError):
+        logger.exception(
+            "Unexpected Cat API response",
+            extra={"chat_id": message.chat.id, "provider": "TheCatAPI", "operation": "fetch_cat_image"},
+        )
         await _answer_cat_error(message)
         return
 
@@ -142,7 +151,10 @@ async def cmd_mew(message: Message) -> None:
             parse_mode="HTML"
         )
     except TelegramAPIError as error:
-        logger.warning("Failed to send cat photo %s: %s", cat_url, error)
+        logger.warning(
+            "Failed to send cat photo (%s): %s", type(error).__name__, error,
+            extra={"chat_id": message.chat.id, "operation": "send_photo"},
+        )
         await _answer_cat_error(message)
 
 
@@ -151,7 +163,10 @@ async def _answer_cat_error(message: Message) -> None:
     try:
         await message.answer(CAT_ERROR_MSG)
     except TelegramAPIError as error:
-        logger.warning("Failed to send cat error message: %s", error)
+        logger.warning(
+            "Failed to send cat error message (%s): %s", type(error).__name__, error,
+            extra={"chat_id": message.chat.id, "operation": "send_cat_error"},
+        )
 
 
 async def _fetch_cat_image() -> str:
