@@ -114,7 +114,10 @@ LEVEL_TITLES_DATA = {
 
 
 async def init_levels():
+    """Create missing tables and seed or update the level titles."""
     async with async_session_maker() as session:
+        connection = await session.connection()
+        await connection.run_sync(models.Base.metadata.create_all)
         exp_current = 0
         for i in range(1, 101):
             if i == 1:
