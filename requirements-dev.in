@@ -1,0 +1,5 @@
+-r requirements.in
+
+# Test tools are installed separately from the production image.
+pytest==9.0.3
+pytest-asyncio==1.3.0
