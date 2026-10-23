@@ -3,6 +3,7 @@ import logging
 import random
 
 from aiogram import Bot
+from aiogram.exceptions import TelegramAPIError
 from core import models
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import select
@@ -124,5 +125,22 @@ async def check_and_update_seasons_task(
             try:
                 await bot.send_message(chat_id=chat_id,
                                        text=msg, parse_mode="HTML")
-            except Exception as e:
-                logger.error(f"Не удалось отправить уведомление о сезоне: {e}")
+            except TelegramAPIError as error:
+                logger.warning(
+                    "Не удалось отправить уведомление о сезоне: %s: %s",
+                    type(error).__name__, error.message,
+                    extra={
+                        "task": "check_and_update_seasons_task",
+                        "chat_id": chat_id,
+                        "operation": "send_season_notification",
+                    },
+                )
+            except Exception:
+                logger.exception(
+                    "Не удалось отправить уведомление о сезоне",
+                    extra={
+                        "task": "check_and_update_seasons_task",
+                        "chat_id": chat_id,
+                        "operation": "send_season_notification",
+                    },
+                )

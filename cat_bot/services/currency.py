@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import datetime
 
@@ -23,9 +24,20 @@ async def fetch_currency_data():
             async with session.get(url) as response:
                 if response.status == 200:
                     return await response.json(content_type=None)
-                logging.warning(f"CBR API error: {response.status}")
-    except Exception as e:
-        logging.error(f"CBR fetch error: {e}")
+                logger.warning(
+                    "CBR API returned HTTP %s", response.status,
+                    extra={"provider": "cbr", "operation": "fetch_currency"},
+                )
+    except (aiohttp.ClientError, asyncio.TimeoutError) as error:
+        logger.warning(
+            "CBR request failed (%s): %s", type(error).__name__, error,
+            extra={"provider": "cbr", "operation": "fetch_currency"},
+        )
+    except Exception:
+        logger.exception(
+            "Unexpected error fetching CBR data",
+            extra={"provider": "cbr", "operation": "fetch_currency"},
+        )
     return None
 
 

@@ -1,8 +1,10 @@
+import asyncio
 import calendar
 import logging
 import random
 from datetime import date
 
+import aiohttp
 from aiogram import Bot
 from aiogram.exceptions import (TelegramAPIError, TelegramBadRequest,
                                 TelegramForbiddenError)
@@ -25,6 +27,29 @@ SECONDS_IN_DAY = 86_400
 SECONDS_IN_HOUR = 3_600
 SECONDS_IN_MINUTE = 60
 MAX_ACHIEVEMENTS_DISPLAY = 3
+
+
+def _log_task_failure(
+    message: str,
+    error: Exception,
+    *,
+    task: str,
+    chat_id: int,
+    operation: str = "run_task",
+) -> None:
+    context = {"task": task, "chat_id": chat_id, "operation": operation}
+    if isinstance(error, TelegramAPIError):
+        logger.warning(
+            "%s: %s: %s", message, type(error).__name__, error.message,
+            extra=context, stacklevel=2,
+        )
+    elif isinstance(error, (aiohttp.ClientError, asyncio.TimeoutError)):
+        logger.warning(
+            "%s (%s): %s", message, type(error).__name__, error,
+            extra=context, stacklevel=2,
+        )
+    else:
+        logger.exception(message, extra=context, stacklevel=2)
 
 
 def get_plural_days(n: int) -> str:
@@ -63,8 +88,11 @@ async def send_transport_reminder(bot: Bot, chat_id: int):
 
         await bot.send_message(chat_id, text, parse_mode="HTML")
         logger.info(f"Напоминание отправлено в чат {chat_id}")
-    except Exception as e:
-        logger.error(f"Ошибка при отправке напоминания: {e}")
+    except Exception as error:
+        _log_task_failure(
+            "Ошибка при отправке напоминания", error,
+            task="send_transport_reminder", chat_id=chat_id,
+        )
 
 
 async def send_weather_briefing(bot: Bot, chat_id: int):
@@ -73,8 +101,11 @@ async def send_weather_briefing(bot: Bot, chat_id: int):
         weather_text = await get_weather()
         await bot.send_message(chat_id, weather_text, parse_mode="HTML")
         logger.info(f"Погода отправлена в чат {chat_id}")
-    except Exception as e:
-        logger.error(f"Ошибка при отправке погоды: {e}")
+    except Exception as error:
+        _log_task_failure(
+            "Ошибка при отправке погоды", error,
+            task="send_weather_briefing", chat_id=chat_id,
+        )
 
 
 async def send_currency_briefing(bot: Bot, chat_id: int):
@@ -83,8 +114,11 @@ async def send_currency_briefing(bot: Bot, chat_id: int):
         text = await get_currency_rates()
         await bot.send_message(chat_id, text, parse_mode="HTML")
         logger.info(f"Курсы валют отправлены в чат {chat_id}")
-    except Exception as e:
-        logger.error(f"Ошибка при отправке валют: {e}")
+    except Exception as error:
+        _log_task_failure(
+            "Ошибка при отправке валют", error,
+            task="send_currency_briefing", chat_id=chat_id,
+        )
 
 
 async def send_crypto_briefing(bot: Bot, chat_id: int):
@@ -93,8 +127,11 @@ async def send_crypto_briefing(bot: Bot, chat_id: int):
         text = await get_crypto_rates()
         await bot.send_message(chat_id, text, parse_mode="HTML")
         logger.info(f"Крипта отправлена в чат {chat_id}")
-    except Exception as e:
-        logger.error(f"Ошибка при отправке крипты: {e}")
+    except Exception as error:
+        _log_task_failure(
+            "Ошибка при отправке крипты", error,
+            task="send_crypto_briefing", chat_id=chat_id,
+        )
 
 
 async def send_news_digest_task(bot: Bot, chat_id: int):
@@ -107,14 +144,19 @@ async def send_news_digest_task(bot: Bot, chat_id: int):
             caption=f"{CAT_CAPTION}\n\n<b>А теперь к новостям IT:</b>",
             parse_mode="HTML"
         )
-    except Exception as e:
-        logger.error(f"Ошибка при отправке кота в рассылке: {e}")
+    except Exception as error:
+        _log_task_failure(
+            "Ошибка при отправке кота в рассылке", error,
+            task="send_news_digest_task", chat_id=chat_id,
+            operation="send_cat",
+        )
         try:
             await bot.send_message(chat_id, "🐱 Котики застряли в пробке, но новости на месте!")  # noqa
         except TelegramAPIError as fallback_error:
-            logger.error(
-                "Не удалось сообщить об ошибке отправки кота в рассылке: %s",
-                fallback_error,
+            _log_task_failure(
+                "Не удалось сообщить об ошибке отправки кота в рассылке",
+                fallback_error, task="send_news_digest_task", chat_id=chat_id,
+                operation="send_cat_fallback",
             )
     news_list = await fetch_it_news(count=3)
     if not news_list:
@@ -353,15 +395,27 @@ async def send_leave_reminder_task(
         )
         logger.info(f"Напоминание о незакрытых выездах отправлено в {chat_id}")
     except TelegramBadRequest as e:
-        logger.error(f"Ошибка отправки (Bad Request): {e.message}")
+        _log_task_failure(
+            "Ошибка отправки (Bad Request)", e,
+            task="send_leave_reminder_task", chat_id=chat_id,
+        )
         if "chat not found" in str(e).lower():
-            logger.critical("Бот не добавлен в группу или chat_id неверный!")
+            logger.critical(
+                "Бот не добавлен в группу или chat_id неверный!",
+                extra={"task": "send_leave_reminder_task", "chat_id": chat_id},
+            )
     except TelegramForbiddenError as e:
-        logger.error(f"Нет прав на отправку (Forbidden): {e.message}")
+        _log_task_failure(
+            "Нет прав на отправку (Forbidden)", e,
+            task="send_leave_reminder_task", chat_id=chat_id,
+        )
         if "bot was blocked" in str(e).lower():
-            logger.critical("Бот заблокирован в группе!")
-    except Exception as e:
-        logger.error(
-            f"Критическая ошибка в send_leave_reminder_task: {e}",
-            exc_info=True
+            logger.critical(
+                "Бот заблокирован в группе!",
+                extra={"task": "send_leave_reminder_task", "chat_id": chat_id},
+            )
+    except Exception as error:
+        _log_task_failure(
+            "Ошибка в send_leave_reminder_task", error,
+            task="send_leave_reminder_task", chat_id=chat_id,
         )

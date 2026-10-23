@@ -84,8 +84,11 @@ def get_moon_phase_local() -> dict:
             phase_name = "New Moon"
 
         return {"phase": get_moon_translation(phase_name)}
-    except Exception as e:
-        logger.error(f"Ошибка локального расчета Луны: {e}")
+    except Exception:
+        logger.exception(
+            "Ошибка локального расчета Луны",
+            extra={"operation": "calculate_moon_phase"},
+        )
         return {"phase": "Ошибка расчета 🌑"}
 
 
@@ -99,9 +102,20 @@ async def fetch_owm_weather(session, city, api_key):
         async with session.get(url) as response:
             if response.status == 200:
                 return await response.json()
-            logging.warning(f"OWM Weather API error: {response.status}")
-    except Exception as e:
-        logging.error(f"OWM weather fetch error: {e}")
+            logger.warning(
+                "OpenWeather weather API returned HTTP %s", response.status,
+                extra={"provider": "openweather", "operation": "fetch_weather"},
+            )
+    except (aiohttp.ClientError, asyncio.TimeoutError) as error:
+        logger.warning(
+            "OpenWeather weather request failed (%s): %s", type(error).__name__, error,
+            extra={"provider": "openweather", "operation": "fetch_weather"},
+        )
+    except Exception:
+        logger.exception(
+            "Unexpected error fetching OpenWeather weather",
+            extra={"provider": "openweather", "operation": "fetch_weather"},
+        )
     return None
 
 
@@ -115,9 +129,20 @@ async def fetch_owm_forecast(session, city, api_key):
         async with session.get(url) as response:
             if response.status == 200:
                 return await response.json()
-            logging.warning(f"OWM Forecast API error: {response.status}")
-    except Exception as e:
-        logging.error(f"OWM forecast fetch error: {e}")
+            logger.warning(
+                "OpenWeather forecast API returned HTTP %s", response.status,
+                extra={"provider": "openweather", "operation": "fetch_forecast"},
+            )
+    except (aiohttp.ClientError, asyncio.TimeoutError) as error:
+        logger.warning(
+            "OpenWeather forecast request failed (%s): %s", type(error).__name__, error,
+            extra={"provider": "openweather", "operation": "fetch_forecast"},
+        )
+    except Exception:
+        logger.exception(
+            "Unexpected error fetching OpenWeather forecast",
+            extra={"provider": "openweather", "operation": "fetch_forecast"},
+        )
     return None
 
 
@@ -128,9 +153,20 @@ async def fetch_mag_data(session):
         async with session.get(url) as response:
             if response.status == 200:
                 return await response.json()
-            logging.warning(f"NOAA Mag API error: {response.status}")
-    except Exception as e:
-        logging.error(f"NOAA mag fetch error: {e}")
+            logger.warning(
+                "NOAA API returned HTTP %s", response.status,
+                extra={"provider": "noaa", "operation": "fetch_magnetic_data"},
+            )
+    except (aiohttp.ClientError, asyncio.TimeoutError) as error:
+        logger.warning(
+            "NOAA request failed (%s): %s", type(error).__name__, error,
+            extra={"provider": "noaa", "operation": "fetch_magnetic_data"},
+        )
+    except Exception:
+        logger.exception(
+            "Unexpected error fetching NOAA data",
+            extra={"provider": "noaa", "operation": "fetch_magnetic_data"},
+        )
     return None
 
 
@@ -141,7 +177,10 @@ def parse_current_weather(data):
 
     try:
         if not data.get("weather"):
-            logger.warning("Пришел пустой массив weather")
+            logger.warning(
+                "Пришел пустой массив weather",
+                extra={"provider": "openweather", "operation": "parse_weather"},
+            )
             return None
 
         def get_wind_direction(deg):
@@ -166,7 +205,10 @@ def parse_current_weather(data):
             pressure_hpa = data["main"]["grnd_level"]
         else:
             pressure_hpa = data["main"]["pressure"]
-            logging.warning("Нет данных 'grnd_level', используем 'pressure'")
+            logger.warning(
+                "Нет данных 'grnd_level', используем 'pressure'",
+                extra={"provider": "openweather", "operation": "parse_weather"},
+            )
         pressure_mmhg = pressure_hpa * 0.750062
         description = data["weather"][0]["description"]
 
@@ -202,8 +244,11 @@ def parse_current_weather(data):
             ).strftime("%H:%M"),
             "emoji": weather_emoji.get(description.lower(), "❓"),
         }
-    except Exception as e:
-        logging.error(f"Error parsing OWM weather: {e}")
+    except Exception:
+        logger.exception(
+            "Error parsing OpenWeather weather",
+            extra={"provider": "openweather", "operation": "parse_weather"},
+        )
         return None
 
 
@@ -237,8 +282,11 @@ def parse_forecast(data):
                 elif time_str == "21:00":
                     forecast["evening"] = {"temp": temp, "desc": desc}
         return forecast
-    except Exception as e:
-        logging.error(f"Error parsing OWM forecast: {e}")
+    except Exception:
+        logger.exception(
+            "Error parsing OpenWeather forecast",
+            extra={"provider": "openweather", "operation": "parse_forecast"},
+        )
         return None
 
 
@@ -250,8 +298,11 @@ def parse_mag_data(data):
         latest_entry = data[-1]
         kp_index = latest_entry["kp_index"]
         return {"status": get_kp_description(kp_index)}
-    except Exception as e:
-        logging.warning(f"Mag parse error: {e}")
+    except Exception:
+        logger.exception(
+            "Error parsing NOAA magnetic data",
+            extra={"provider": "noaa", "operation": "parse_magnetic_data"},
+        )
         return None
 
 

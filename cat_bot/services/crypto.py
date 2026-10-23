@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import datetime
 
@@ -18,9 +19,20 @@ async def fetch_crypto_data():
             async with session.get(url) as response:
                 if response.status == 200:
                     return await response.json()
-                logging.warning(f"Crypto API error: {response.status}")
-    except Exception as e:
-        logging.error(f"Crypto fetch error: {e}")
+                logger.warning(
+                    "CoinGecko API returned HTTP %s", response.status,
+                    extra={"provider": "coingecko", "operation": "fetch_crypto"},
+                )
+    except (aiohttp.ClientError, asyncio.TimeoutError) as error:
+        logger.warning(
+            "CoinGecko request failed (%s): %s", type(error).__name__, error,
+            extra={"provider": "coingecko", "operation": "fetch_crypto"},
+        )
+    except Exception:
+        logger.exception(
+            "Unexpected error fetching CoinGecko data",
+            extra={"provider": "coingecko", "operation": "fetch_crypto"},
+        )
     return None
 
 

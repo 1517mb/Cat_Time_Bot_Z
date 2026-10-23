@@ -88,8 +88,8 @@ async def migrate_table(
         logger.info(f"✅ {table_name}: перенесено {count} записей.")
     except sqlite3.OperationalError:
         logger.warning(f"⚠️ {table_name} пропущена (не найдена).")
-    except Exception as e:
-        logger.error(f"❌ Ошибка при переносе {table_name}: {e}")
+    except Exception:
+        logger.exception("Ошибка при переносе таблицы %s", table_name)
 
 
 async def main():
