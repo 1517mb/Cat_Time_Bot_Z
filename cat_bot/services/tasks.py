@@ -4,8 +4,8 @@ import random
 from datetime import date
 
 from aiogram import Bot
-from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
-from aiogram.types import URLInputFile
+from aiogram.exceptions import (TelegramAPIError, TelegramBadRequest,
+                                TelegramForbiddenError)
 from core.bot_constants import BotRemidersCfg
 from core.crud import (get_all_active_activities, get_full_daily_stats,
                        get_next_level_exp, get_user_rank_info,
@@ -103,13 +103,19 @@ async def send_news_digest_task(bot: Bot, chat_id: int):
         cat_url = await _fetch_cat_image()
         await bot.send_photo(
             chat_id=chat_id,
-            photo=URLInputFile(cat_url),
+            photo=cat_url,
             caption=f"{CAT_CAPTION}\n\n<b>А теперь к новостям IT:</b>",
             parse_mode="HTML"
         )
     except Exception as e:
         logger.error(f"Ошибка при отправке кота в рассылке: {e}")
-        await bot.send_message(chat_id, "🐱 Котики застряли в пробке, но новости на месте!")  # noqa
+        try:
+            await bot.send_message(chat_id, "🐱 Котики застряли в пробке, но новости на месте!")  # noqa
+        except TelegramAPIError as fallback_error:
+            logger.error(
+                "Не удалось сообщить об ошибке отправки кота в рассылке: %s",
+                fallback_error,
+            )
     news_list = await fetch_it_news(count=3)
     if not news_list:
         return await bot.send_message(chat_id, "🗞 Сегодня новостей не нашлось.")  # noqa
