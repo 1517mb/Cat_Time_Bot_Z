@@ -49,7 +49,7 @@ def _log_task_failure(
             extra=context, stacklevel=2,
         )
     else:
-        logger.exception(message, extra=context, stacklevel=2)
+        logger.error(message, exc_info=True, extra=context, stacklevel=2)
 
 
 def get_plural_days(n: int) -> str:
