@@ -2,8 +2,10 @@ from datetime import date
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from aiogram.exceptions import TelegramNetworkError
+from aiogram.methods import SendMessage, SendPhoto
 from services.tasks import (get_plural_days, send_leave_reminder_task,
-                            send_transport_reminder)
+                            send_news_digest_task, send_transport_reminder)
 
 
 @pytest.mark.parametrize(
@@ -24,6 +26,79 @@ def test_get_plural_days(days, expected):
 def mock_bot():
     """Фикстура для создания мока объекта Bot."""
     return AsyncMock()
+
+
+@pytest.fixture
+def digest_sources():
+    news = [
+        {"title": f"IT news {i}", "link": f"https://example.com/news/{i}"}
+        for i in range(1, 4)
+    ]
+    with (
+        patch(
+            "services.tasks._fetch_cat_image",
+            return_value="https://example.com/cat.jpg",
+        ) as cat_image,
+        patch("services.tasks.fetch_it_news", return_value=news) as it_news,
+    ):
+        yield cat_image, it_news
+
+
+@pytest.mark.asyncio
+async def test_news_digest_sends_cat_url_and_news(mock_bot, digest_sources):
+    cat_image, it_news = digest_sources
+
+    await send_news_digest_task(mock_bot, 12345)
+
+    cat_image.assert_awaited_once_with()
+    mock_bot.send_photo.assert_awaited_once()
+    assert mock_bot.send_photo.await_args.kwargs["photo"] == cat_image.return_value
+    assert mock_bot.send_photo.await_args.kwargs["chat_id"] == 12345
+    it_news.assert_awaited_once_with(count=3)
+    mock_bot.send_message.assert_awaited_once_with(
+        chat_id=12345,
+        text=(
+            "🚀 <b>Топ-3 IT новости:</b>\n\n"
+            "1. <a href='https://example.com/news/1'>IT news 1</a>\n"
+            "2. <a href='https://example.com/news/2'>IT news 2</a>\n"
+            "3. <a href='https://example.com/news/3'>IT news 3</a>"
+        ),
+        parse_mode="HTML",
+        disable_web_page_preview=False,
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("fallback_fails", [False, True])
+async def test_news_digest_continues_after_cat_network_error(
+    mock_bot, digest_sources, fallback_fails, caplog
+):
+    cat_image, it_news = digest_sources
+    mock_bot.send_photo.side_effect = TelegramNetworkError(
+        method=SendPhoto(chat_id=12345, photo=cat_image.return_value),
+        message="Request timeout error",
+    )
+    if fallback_fails:
+        mock_bot.send_message.side_effect = [
+            TelegramNetworkError(
+                method=SendMessage(chat_id=12345, text="Fallback"),
+                message="Request timeout error",
+            ),
+            None,
+        ]
+
+    await send_news_digest_task(mock_bot, 12345)
+
+    mock_bot.send_photo.assert_awaited_once()
+    it_news.assert_awaited_once_with(count=3)
+    assert mock_bot.send_message.await_count == 2
+    assert mock_bot.send_message.await_args.kwargs["chat_id"] == 12345
+    assert "Топ-3 IT новости" in mock_bot.send_message.await_args.kwargs["text"]
+    for news in it_news.return_value:
+        assert news["title"] in mock_bot.send_message.await_args.kwargs["text"]
+        assert news["link"] in mock_bot.send_message.await_args.kwargs["text"]
+    if fallback_fails:
+        assert "Не удалось сообщить об ошибке отправки кота" in caplog.text
 
 
 @pytest.mark.asyncio
