@@ -3,7 +3,7 @@ VERSION = "2.0a"
 
 class BoteCfg:
     HELP_TEXT = (
-        f"<b>CatBot v{VERSION} (FastAPI Edition)</b>\n\n"
+        f"<b>CatBot v{VERSION}</b>\n\n"
         "😺👋 Привет! Вот список доступных команд:\n\n"
         "<b>Основные команды:</b>\n"
         "/help — Показать это сообщение с инструкциями\n"
