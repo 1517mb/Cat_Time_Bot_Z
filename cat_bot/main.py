@@ -24,6 +24,7 @@ import sys
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
+from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.enums import ParseMode
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from core.database import async_session_maker, engine
@@ -61,6 +62,7 @@ async def main():
         raise ValueError("Токен бота не найден в .env!")
     bot = Bot(
         token=bot_token,
+        session=AiohttpSession(timeout=20),
         default=DefaultBotProperties(parse_mode=ParseMode.HTML)
     )
     dp = Dispatcher()
