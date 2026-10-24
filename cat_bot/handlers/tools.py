@@ -3,7 +3,7 @@ import logging
 
 import aiohttp
 from aiogram import Router
-from aiogram.exceptions import TelegramAPIError
+from aiogram.exceptions import TelegramAPIError, TelegramNetworkError
 from aiogram.filters import Command
 from aiogram.types import Message
 
@@ -155,6 +155,8 @@ async def cmd_mew(message: Message) -> None:
             "Failed to send cat photo (%s): %s", type(error).__name__, error,
             extra={"chat_id": message.chat.id, "operation": "send_photo"},
         )
+        if isinstance(error, TelegramNetworkError):
+            return
         await _answer_cat_error(message)
 
 
