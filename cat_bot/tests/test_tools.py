@@ -38,11 +38,33 @@ async def test_mew_reports_cat_api_network_failure(error):
     message.answer.assert_awaited_once_with(CAT_ERROR_MSG)
 
 
-@pytest.mark.parametrize("error_type", [TelegramNetworkError, TelegramBadRequest])
 @pytest.mark.asyncio
-async def test_mew_reports_photo_send_failure_without_retry(error_type):
+async def test_mew_logs_photo_network_failure_without_fallback_or_retry(caplog):
     message = AsyncMock()
-    message.answer_photo.side_effect = error_type(
+    message.chat.id = 123
+    message.answer_photo.side_effect = TelegramNetworkError(
+        method=SendPhoto(chat_id=123, photo=CAT_URL), message="Request timeout error"
+    )
+
+    with patch("handlers.tools._fetch_cat_image", return_value=CAT_URL):
+        await cmd_mew(message)
+
+    message.answer_photo.assert_awaited_once_with(
+        photo=CAT_URL, caption=CAT_CAPTION, parse_mode="HTML"
+    )
+    message.answer.assert_not_awaited()
+    records = [record for record in caplog.records if record.name == "handlers.tools"]
+    assert len(records) == 1
+    assert records[0].levelname == "WARNING"
+    assert records[0].chat_id == 123
+    assert records[0].operation == "send_photo"
+    assert "TelegramNetworkError" in records[0].getMessage()
+
+
+@pytest.mark.asyncio
+async def test_mew_reports_photo_bad_request_without_retry():
+    message = AsyncMock()
+    message.answer_photo.side_effect = TelegramBadRequest(
         method=SendPhoto(chat_id=123, photo=CAT_URL), message="Photo unavailable"
     )
 
